@@ -4,7 +4,7 @@ import scala.math._
 import org.apache.commons.math.complex.Complex
 
 object FFT extends ComplexHelpers {
-  def transform(values: Array[Double], seriesNum:Int) = (0 until seriesNum).map(evaluateKHarmonic(values))
+  def transform(values: Array[Double], seriesNum:Int) = (0 until seriesNum).map(evaluateKHarmonic(values)).toArray
 
   private def evaluateKHarmonic(values: Array[Double])(k: Int) =
     divideAndEvaluate(k, Array(values), Array(new Complex(1,0)))(0) / values.length
