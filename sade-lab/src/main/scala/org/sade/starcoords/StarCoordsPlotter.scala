@@ -5,10 +5,16 @@ import java.awt.{Paint, RenderingHints, Color, Graphics2D}
 
 class StarCoordsPlotter extends Component {
   var skyMapPoints: Seq[SkyMapPoint] = Nil
+  def filteredPoints: Seq[SkyMapPoint] = SkyMapFilter.averageFilter(skyMapPoints)
   private var viewMode: ViewMode = Galactic
 
   def changeViewMode(viewMode: ViewMode) {
     this.viewMode = viewMode
+    repaint()
+  }
+
+  def changeSkyMapPoints(points: Seq[SkyMapPoint]) {
+    skyMapPoints = points
     repaint()
   }
 
@@ -29,14 +35,14 @@ class StarCoordsPlotter extends Component {
   }
 
   private def planePlot(g: Graphics2D) {
-    val normalized = normalize(skyMapPoints.map(_.rotationAngle)) zip normalize(skyMapPoints.map(_.time.getTime.toDouble)) zip normalize(skyMapPoints.map(_.value))
+    val normalized = normalize(filteredPoints.map(_.rotationAngle)) zip normalize(filteredPoints.map(_.time.getTime.toDouble)) zip normalize(filteredPoints.map(_.value))
     plotNormalized(normalized, g)
   }
 
   def galacticPlot(g: Graphics2D) {
-    val galacticCoords = skyMapPoints.map(_.standCoordinate).map(c => StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c, LabCoordinates(55.765, 37.686))))
+    val galacticCoords = filteredPoints.map(_.standCoordinate).map(c => StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c, LabCoordinates(55.765, 37.686))))
     val projected = galacticCoords.map(c => MollweideProjection.project(c.l, c.b))
-    val normalized = normalize(projected.map(_._1)) zip normalize(projected.map(_._2)) zip normalize(skyMapPoints.map(_.value))
+    val normalized = normalize(projected.map(_._1)) zip normalize(projected.map(_._2)) zip normalize(filteredPoints.map(_.value))
     plotNormalized(normalized, g)
   }
 
