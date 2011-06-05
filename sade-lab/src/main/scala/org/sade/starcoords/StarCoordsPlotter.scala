@@ -18,11 +18,22 @@ class StarCoordsPlotter extends Component {
     values.map(v => (v - min) / (max - min))
   }
 
+  def plotNormalized(normalized: Seq[((Double, Double), Double)], g: Graphics2D) {
+    normalized.foreach(drawPoint(g))
+  }
+
+  private def planePlot(g: Graphics2D) {
+    val normalized = normalize(skyMapPoints.map(_.rotationAngle)) zip normalize(skyMapPoints.map(_.time.getTime.toDouble)) zip normalize(skyMapPoints.map(_.value))
+    plotNormalized(normalized, g)
+  }
+
   override protected def paintComponent(g: Graphics2D) {
     g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
     g.clearRect(0, 0, size.getWidth.toInt, size.getHeight.toInt)
 
-    val normalized = normalize(skyMapPoints.map(_.rotationAngle)) zip normalize(skyMapPoints.map(_.time.getTime.toDouble)) zip normalize(skyMapPoints.map(_.value))
-    normalized.foreach(drawPoint(g))
+    val galacticCoords = skyMapPoints.map(_.standCoordinate).map(c => StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c, LabCoordinates(55.765, 37.686))))
+    val projected = galacticCoords.map(c => MollweideProjection.project(c.l, c.b))
+    val normalized = normalize(projected.map(_._1)) zip normalize(projected.map(_._2)) zip normalize(skyMapPoints.map(_.value))
+    plotNormalized(normalized, g)
   }
 }

@@ -56,6 +56,8 @@ case class SkyMapPoint(
     case Forward => pointIndex
     case Backward => pointCount - pointIndex
   }) * 360.0 / pointCount
+
+  def standCoordinate = StandCoordinate(rotationAngle, time)
 }
 
 trait Direction

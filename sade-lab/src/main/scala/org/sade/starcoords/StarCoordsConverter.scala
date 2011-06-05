@@ -32,7 +32,11 @@ object StarCoordsConverter {
     gradFrom(fromHourAngle(18.697374558 + 24.06570982441908 * d)) + coords.labCoord.longitude
   }
 
-  def toGalacticCoordinates(equatorial: EquatorialCoordinates) = {
+  def toGalacticCoordinates(standCoordinate: FullStandCoordinate): GalacticCoordinates = {
+    toGalacticCoordinates(toEquatorial(standCoordinate))
+  }
+
+  def toGalacticCoordinates(equatorial: EquatorialCoordinates): GalacticCoordinates = {
     val deltaRad = radiansFrom(equatorial.delta)
     val alphaRad = radiansFrom(equatorial.alpha)
     val rhsMatrix = MatrixUtils.createColumnRealMatrix(Array(cos(deltaRad) * cos(alphaRad), cos(deltaRad) * sin(alphaRad), sin(deltaRad)))
