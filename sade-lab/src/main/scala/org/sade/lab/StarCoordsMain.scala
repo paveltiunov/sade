@@ -13,8 +13,15 @@ import swing.FlowPanel.Alignment
 import org.sade.starcoords._
 import java.io.{File, FileInputStream, InputStream}
 import javax.swing.filechooser.{FileNameExtensionFilter, FileFilter}
+import javax.swing.UIManager
 
 object StarCoordsMain extends SimpleSwingApplication {
+  UIManager.getInstalledLookAndFeels.foreach(info => {
+    if ("Nimbus" == info.getName) {
+      UIManager.setLookAndFeel(info.getClassName);
+    }
+  })
+
   def loadPoints(inputStream: InputStream) = {
     AnalyzerXMLImport.parse(XML.load(inputStream))
   }
@@ -36,10 +43,11 @@ object StarCoordsMain extends SimpleSwingApplication {
     contents = new BorderPanel {
       add(new FlowPanel(Alignment.Left)(
         new ComboBox(Seq(Galactic, Plane)) {
-        listenTo(selection)
-        reactions += {
-          case SelectionChanged(_) => starCoordsPlotter.changeViewMode(selection.item)
-        }},
+          listenTo(selection)
+          reactions += {
+            case SelectionChanged(_) => starCoordsPlotter.changeViewMode(selection.item)
+          }
+        },
         new Button("Open") {
           listenTo(mouse.clicks)
           reactions += {
