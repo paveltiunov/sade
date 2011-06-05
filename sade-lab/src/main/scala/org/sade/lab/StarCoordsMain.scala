@@ -1,11 +1,15 @@
 package org.sade.lab
 
 import plot.PlotPanel
-import swing.{MainFrame, SimpleSwingApplication}
 import java.awt.Dimension
 import org.sade.analyzers.FloatReader
-import org.sade.starcoords.{AnalyzerXMLImport, StarCoordsPlotter}
 import xml.XML
+import com.sun.xml.internal.ws.wsdl.writer.document.http.Address
+import swing._
+import event.SelectionChanged
+import org.sade.starcoords.{Plane, Galactic, AnalyzerXMLImport, StarCoordsPlotter}
+import collection.mutable.Buffer
+import swing.BorderPanel.Position
 
 object StarCoordsMain extends SimpleSwingApplication {
   def top = new MainFrame {
@@ -16,8 +20,20 @@ object StarCoordsMain extends SimpleSwingApplication {
 
     val points = AnalyzerXMLImport.parse(XML.load(getClass.getResource("/org/sade/starcoords/" + name + ".anx")))
 
-    contents = new StarCoordsPlotter {
+    val starCoordsPlotter = new StarCoordsPlotter {
       skyMapPoints = points
     }
+
+    contents = new BorderPanel {
+      add(new ComboBox(Seq(Galactic, Plane)) {
+        listenTo(selection)
+        reactions += {
+          case SelectionChanged(_) => starCoordsPlotter.changeViewMode(selection.item)
+        }
+      }, Position.North)
+
+      add(starCoordsPlotter, Position.Center)
+    }
+
   }
 }
