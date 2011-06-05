@@ -10,4 +10,8 @@ class PlotPanel extends Component {
   def addLinePlot(name: String, points: Array[Double]) {
     peer.addLinePlot(name, points)
   }
+
+  def addScatterPlot(name: String, points: Seq[(Double, Double)]) {
+    peer.addScatterPlot(name, points.map(p => Array(p._1, p._2)).toArray)
+  }
 }
