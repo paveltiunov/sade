@@ -5,10 +5,7 @@ import java.util.Date
 import java.text.{ParseException, SimpleDateFormat, DateFormat}
 
 object AnalyzerXMLImport {
-  private val dateFormats = Seq(
-    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSz"),
-    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
-  )
+  private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
 
   private def nodeValue(node: Node, nodeName: String) = {
     (node \ nodeName).text
@@ -19,13 +16,13 @@ object AnalyzerXMLImport {
   }
 
   private def parseDate(date: String) = {
-    dateFormats.find(f => try {f.parse(date) != null} catch {case e: ParseException => false}).get.parse(date)
+    dateFormat.parse(date)
   }
 
   private def parseNode(node: Node) = {
     SkyMapPoint(
       nodeValue(node, "StandardDeviation").toDouble,
-      parseDate(nodeValue(node, "Time").replace("+", "GMT+")),
+      parseDate(nodeValue(node, "Time").replace("+", "GMT+").replaceFirst("\\.\\d+GMT\\+", "GMT+")),
       intNodeValue(node, "PointIndex"),
       intNodeValue(node, "PointCount"),
       intNodeValue(node, "DirIndex"),

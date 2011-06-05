@@ -20,7 +20,8 @@ class StarCoordsPlotter extends Component {
 
   def drawPoint(g: Graphics2D)(p: ((Double, Double), Double)) {
     val hue = p._2.toFloat * 5.0f/6.0f
-    g.setColor(new Color(Color.HSBtoRGB(hue, 0.8f, 1.0f)))
+    val color = new Color(Color.HSBtoRGB(hue, 1.0f, 1.0f))
+    g.setColor(new Color(color.getRed, color.getGreen, color.getBlue, 200))
     g.fillOval((p._1._1 * size.getWidth).toInt - 2, (p._1._2 * size.getHeight).toInt - 2, 4, 4)
   }
 
@@ -40,7 +41,7 @@ class StarCoordsPlotter extends Component {
   }
 
   def galacticPlot(g: Graphics2D) {
-    val galacticCoords = filteredPoints.map(_.standCoordinate).map(c => StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c, LabCoordinates(55.765, 37.686))))
+    val galacticCoords = filteredPoints.map(_.standCoordinate).map(c => StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c, LabCoordinates(37.686, 55.765))))
     val projected = galacticCoords.map(c => MollweideProjection.project(c.l, c.b))
     val normalized = normalize(projected.map(_._1)) zip normalize(projected.map(_._2)) zip normalize(filteredPoints.map(_.value))
     plotNormalized(normalized, g)
@@ -48,6 +49,7 @@ class StarCoordsPlotter extends Component {
 
   override protected def paintComponent(g: Graphics2D) {
     g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+    g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY)
     g.clearRect(0, 0, size.getWidth.toInt, size.getHeight.toInt)
     val border = 10
     g.scale((size.getWidth - border*2) / size.getWidth, (size.getHeight - border*2) / size.getHeight)

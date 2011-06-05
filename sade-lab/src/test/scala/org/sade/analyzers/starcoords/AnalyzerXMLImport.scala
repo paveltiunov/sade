@@ -25,7 +25,7 @@ class AnalyzerXMLImport extends Spec with MustMatchers {
         </SkyMapPoint>
         <SkyMapPoint>
           <StandardDeviation>0.000964597803390722</StandardDeviation>
-          <Time>2010-03-11T22:20:57.46875+03:00</Time>
+          <Time>2010-03-27T10:25:48.12453+03:00</Time>
           <Value>0.25483535461422169</Value>
           <PointIndex>1</PointIndex>
           <PointCount>78</PointCount>
@@ -40,6 +40,7 @@ class AnalyzerXMLImport extends Spec with MustMatchers {
       result must have size (2)
       result(0).standardDeviation must be(0.0010927760049637915)
       result(0).time must be (new GregorianCalendar(2010, 2, 27, 10, 25, 48).getTime)
+      result(1).time must be (new GregorianCalendar(2010, 2, 27, 10, 25, 48).getTime)
       result(0).pointCount must be (78)
       result(0).pointIndex must be (0)
       result(0).direction must be (Forward)
