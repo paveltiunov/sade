@@ -19,11 +19,15 @@ object MollweideProjection {
     if (abs(next - initialTheta) < eps) next else findThetaRecursive(next, latitudeRad)
   }
 
-  def project(longitude: Double, latitude: Double) = {
+  def project(longitude: Double, latitude: Double): (Double, Double) = {
     val longitudeRad = longitude.toRadians % Pi
     val latitudeRad = latitude.toRadians % Pi
     val theta = findTheta(latitudeRad)
     val sqrt2 = sqrt(2)
-    (2 * sqrt2 / Pi * longitudeRad * cos(theta), sqrt2 * sin(theta))
+    (2 * sqrt2 / Pi * longitudeRad * cos(theta), -sqrt2 * sin(theta))
+  }
+
+  def project(galacticCoordinates: GalacticCoordinates): (Double, Double) = {
+    project(galacticCoordinates.l, galacticCoordinates.b)
   }
 }
