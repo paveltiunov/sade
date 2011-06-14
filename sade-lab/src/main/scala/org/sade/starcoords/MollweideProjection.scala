@@ -20,11 +20,16 @@ object MollweideProjection {
   }
 
   def project(longitude: Double, latitude: Double): (Double, Double) = {
-    val longitudeRad = longitude.toRadians % Pi
-    val latitudeRad = latitude.toRadians % Pi
+    val longitudeRad = truncateOverAngles(longitude)
+    val latitudeRad = latitude.toRadians
     val theta = findTheta(latitudeRad)
     val sqrt2 = sqrt(2)
-    (2 * sqrt2 / Pi * longitudeRad * cos(theta), -sqrt2 * sin(theta))
+    (-2 * sqrt2 / Pi * longitudeRad * cos(theta), -sqrt2 * sin(theta))
+  }
+
+  private def truncateOverAngles(degrees: Double): Double = {
+    val truncatedTo2Pi = degrees.toRadians % (2 * Pi)
+    if (truncatedTo2Pi > Pi) truncatedTo2Pi - 2*Pi else if (truncatedTo2Pi < -Pi) truncatedTo2Pi + 2*Pi else truncatedTo2Pi
   }
 
   def project(galacticCoordinates: GalacticCoordinates): (Double, Double) = {

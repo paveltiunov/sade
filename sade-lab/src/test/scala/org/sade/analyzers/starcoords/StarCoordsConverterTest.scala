@@ -39,7 +39,7 @@ class StarCoordsConverterTest extends Spec with MustMatchers {
       ) must be(280.46.plusOrMinus(1E-2))
     }
 
-    it("should convert from zero J2000 + longitude") {
+    it("should convert from zero J2000 + degrees") {
       StarCoordsConverter.sideralTime(FullStandCoordinate(
         StandCoordinate(0, j2000.getTime),
         LabCoordinates(90, 0))

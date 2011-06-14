@@ -7,7 +7,7 @@ class StarCoordsPlotter extends Component {
   var skyMapPoints: Seq[SkyMapPoint] = Nil
   def filteredPoints: Seq[SkyMapPoint] = SkyMapFilter.averageFilter(skyMapPoints)
   private var viewMode: ViewMode = Galactic
-  val cmbrPoints: Seq[GalacticCoordinates] = Seq(GalacticCoordinates(30, 276))
+  val cmbrPoints: Seq[GalacticCoordinates] = Seq(GalacticCoordinates(48, 264))
 
   def changeViewMode(viewMode: ViewMode) {
     this.viewMode = viewMode
@@ -28,7 +28,11 @@ class StarCoordsPlotter extends Component {
 
   def drawCMBRPoint(g: Graphics2D)(p: NormalizedCMBR) {
     g.setColor(Color.black)
-    g.drawRect((p.point.x * size.getWidth).toInt - 5, (p.point.y * size.getHeight).toInt - 5, 10, 10)
+    val centerX = (p.point.x * size.getWidth).toInt
+    val centerY = (p.point.y * size.getHeight).toInt
+    g.drawRect(centerX - 5, centerY - 5, 10, 10)
+    g.drawLine(centerX - 5, centerY - 5, centerX + 5, centerY + 5)
+    g.drawLine(centerX + 5, centerY - 5, centerX - 5, centerY + 5)
   }
 
   private def normalize(values: Seq[Double]) = {
