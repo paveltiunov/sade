@@ -51,7 +51,7 @@ class StarCoordsPlotter extends Component {
   }
 
   def galacticPlot(g: Graphics2D) {
-    val galacticCoords = filteredPoints.map(p => (p.standCoordinate, p.value)).map(c => (StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c._1, LabCoordinates(37.686, 55.765))), c._2))
+    val galacticCoords = filteredPoints.map(p => (p.standCoordinate, p.value)).map(c => (StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c._1, LabCoordinates(37.686, 55.765, 135))), c._2))
     val projected = galacticCoords.map(c => (MollweideProjection.project(c._1.l, c._1.b), c._2)).map(p => NormalizedColorPoint(NormalizedPoint(p._1._1, p._1._2), p._2))
     val projectedCmbr = cmbrPoints.map(MollweideProjection.project).map(p => NormalizedCMBR(NormalizedPoint(p._1, p._2)))
     val normalizedPointHolders = normalizePointHolders(projected ++ projectedCmbr)

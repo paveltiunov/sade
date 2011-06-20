@@ -18,13 +18,13 @@ class StarCoordsConverterTest extends Spec with MustMatchers {
 
   describe("The Converter") {
     it("should convert polar case") {
-      assertCoords(FullStandCoordinate(StandCoordinate(15, null), LabCoordinates(15, 90)), 0d, -165d)
+      assertCoords(FullStandCoordinate(StandCoordinate(15, null), LabCoordinates(15, 90, 15)), 0d, -150d)
     }
 
     it("should convert equator case") {
-      assertCoords(FullStandCoordinate(StandCoordinate(0, null), LabCoordinates(0, 0)), 90, -180)
-      assertCoords(FullStandCoordinate(StandCoordinate(90, null), LabCoordinates(90, 0)), 0, -90)
-      assertCoords(FullStandCoordinate(StandCoordinate(-90, null), LabCoordinates(-90, 0)), 0, 90)
+      assertCoords(FullStandCoordinate(StandCoordinate(0, null), LabCoordinates(0, 0, 0)), 90, -180)
+      assertCoords(FullStandCoordinate(StandCoordinate(90, null), LabCoordinates(90, 0, 0)), 0, -90)
+      assertCoords(FullStandCoordinate(StandCoordinate(-90, null), LabCoordinates(-90, 0, 0)), 0, 90)
     }
   }
 
@@ -35,14 +35,14 @@ class StarCoordsConverterTest extends Spec with MustMatchers {
     it("should convert from zero J2000") {
       StarCoordsConverter.sideralTime(FullStandCoordinate(
         StandCoordinate(0, j2000.getTime),
-        LabCoordinates(0, 0))
+        LabCoordinates(0, 0, 0))
       ) must be(280.46.plusOrMinus(1E-2))
     }
 
     it("should convert from zero J2000 + degrees") {
       StarCoordsConverter.sideralTime(FullStandCoordinate(
         StandCoordinate(0, j2000.getTime),
-        LabCoordinates(90, 0))
+        LabCoordinates(90, 0, 0))
       ) must be((370.46).plusOrMinus(1E-2))
     }
   }

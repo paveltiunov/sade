@@ -58,7 +58,7 @@ object StarCoordsConverter {
   }
 
   def toDeltaTime(coords: FullStandCoordinate) = {
-    val thetaRad = radiansFrom(coords.stand.theta)
+    val thetaRad = radiansFrom(coords.stand.theta + coords.labCoord.zeroAzimuth)
     val phiRad = radiansFrom(coords.labCoord.latitude)
     val result = solveSphericalTriangleEquation(
       -sin(phiRad) * cos(thetaRad),
@@ -73,7 +73,7 @@ case class FullStandCoordinate(stand: StandCoordinate, labCoord: LabCoordinates)
 
 case class StandCoordinate(theta: Double, time: Date)
 
-case class LabCoordinates(longitude: Double, latitude: Double)
+case class LabCoordinates(longitude: Double, latitude: Double, zeroAzimuth: Double)
 
 case class DeltaTime(delta: Double, t: Double)
 
