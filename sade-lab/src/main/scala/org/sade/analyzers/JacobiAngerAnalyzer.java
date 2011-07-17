@@ -3,8 +3,6 @@ package org.sade.analyzers;
 import org.apache.commons.math.complex.Complex;
 import org.sade.analyzers.math.FFT;
 
-import java.nio.Buffer;
-import java.nio.DoubleBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -129,7 +127,7 @@ public class JacobiAngerAnalyzer
     private int ScanPeriod(double[] sample)
     {
         int log = (int)Math.pow(2, Math.floor(Math.log(sample.length) / Math.log(2)));
-        double frequency = FrequencyEvaluator.EvaluateFrequency(take(sample, log), 1);
+        double frequency = FrequencyEvaluator.evaluateFrequency(take(sample, log));
         double period = 1/frequency;
         int searchPeriod = (int) period;
         searchPeriod = SearchPeriod(sample, (int)Math.round(searchPeriod * 0.95), (int)Math.round(searchPeriod * 1.05));

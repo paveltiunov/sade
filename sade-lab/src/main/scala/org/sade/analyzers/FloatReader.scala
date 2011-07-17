@@ -7,6 +7,11 @@ class FloatReader(inputStream: InputStream) {
 
   def chunkStream: Stream[Float] = readNext.map(b => Stream.cons(b, chunkStream)).getOrElse(Stream.empty)
 
+  def chunkArrayStream: Stream[Array[Float]] = chunkStream match {
+    case stream: Stream[Float] if !stream.isEmpty => Stream.cons(stream.take(32768).toArray, chunkArrayStream)
+    case _ => Stream.empty
+  }
+
   private def readNext: Option[Float] = {
     try {
       val ch1 = stream.read

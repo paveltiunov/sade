@@ -31,6 +31,6 @@ class FrequencyAnalyzerTest {
   }
 
   def EvaluateFrequency(doubles: Array[Double]) = {
-    FrequencyEvaluator.EvaluateFrequency(doubles, 1)
+    FrequencyEvaluator.evaluateFrequency(doubles)
   }
 }
