@@ -27,7 +27,7 @@ object StarCoordsConverter {
   def sideralTime(coords: FullStandCoordinate) = {
     val time = coords.stand.time
     val j2000 = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
-    j2000.set(2000, 0, 1, 12, 0)
+    j2000.set(2000, 0, 1, 12, 0, 0)
     val d = new Date(time.getTime - j2000.getTime.getTime).getTime / 1000.0 / 3600.0 / 24.0
     gradFrom(fromHourAngle(18.697374558 + 24.06570982441908 * d)) + coords.labCoord.longitude
   }

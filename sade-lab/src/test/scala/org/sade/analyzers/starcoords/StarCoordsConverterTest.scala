@@ -30,7 +30,7 @@ class StarCoordsConverterTest extends Spec with MustMatchers {
 
   describe("Sideral time converter") {
     val j2000 = new GregorianCalendar(TimeZone.getTimeZone("UTC"))
-    j2000.set(2000, 0, 1, 12, 0)
+    j2000.set(2000, 0, 1, 12, 0, 0)
 
     it("should convert from zero J2000") {
       StarCoordsConverter.sideralTime(FullStandCoordinate(
