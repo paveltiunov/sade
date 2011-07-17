@@ -4,14 +4,15 @@ import java.io.InputStream
 import scala.collection.JavaConversions._
 import scala.math._
 import javax.management.remote.rmi._RMIConnection_Stub
+import org.apache.commons.math.stat.StatUtils
 
 class SignalAnalyzer(inputStream: InputStream) {
   val analyzer = new JacobiAngerAnalyzer
   val floatReader = new FloatReader(inputStream)
   val analyzeResults = estimateParameters.toArray
 
-  def foundDeltaStream: Seq[Double] = {
-    analyzeResults.map(_.getParameters.getDelta)
+  def foundDeltaStream: Array[Double] = {
+    analyzeResults.map(_.getParameters.getDelta).toArray
   }
 
   private def estimateParameters = {
@@ -32,5 +33,17 @@ class SignalAnalyzer(inputStream: InputStream) {
         amplitude * cos(r.getParameters.getOmega * cos(2 * Pi * i / r.getPeriod + r.getParameters.getPhi) + r.getParameters.getDelta) + center
       })
     }).take(originalSignal.size)
+  }
+
+  def absoluteError = {
+    sqrt(StatUtils.variance(foundDeltaStream) / foundDeltaStream.length)
+  }
+
+  def meanValue = {
+    StatUtils.mean(foundDeltaStream)
+  }
+
+  def meanFrequency = {
+    StatUtils.mean(analyzeResults.map(1.0 / _.getPeriod)) * 100000
   }
 }
