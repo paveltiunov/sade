@@ -15,13 +15,7 @@ import java.io.{File, FileInputStream, InputStream}
 import javax.swing.filechooser.{FileNameExtensionFilter, FileFilter}
 import javax.swing.UIManager
 
-object StarCoordsMain extends SimpleSwingApplication {
-  UIManager.getInstalledLookAndFeels.foreach(info => {
-    if ("Nimbus" == info.getName) {
-      UIManager.setLookAndFeel(info.getClassName);
-    }
-  })
-
+object StarCoordsMain extends SimpleSwingApplication with NimbusLookAndFeel {
   def loadPoints(inputStream: InputStream) = {
     AnalyzerXMLImport.parse(XML.load(inputStream))
   }
