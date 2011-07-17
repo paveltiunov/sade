@@ -13,7 +13,7 @@ object SadeLabMain extends SimpleSwingApplication {
     val signalAnalyzer = new SignalAnalyzer(inputStream)
     contents = new PlotPanel {
       addLinePlot("Hello",
-        signalAnalyzer.foundDeltaStream.take(500)
+        signalAnalyzer.foundDeltaStream
           .toArray
       )
     }
