@@ -1,7 +1,6 @@
 package org.sade.analyzers
 
 import java.io.{BufferedInputStream, EOFException, InputStream}
-import javax.management.remote.rmi._RMIConnection_Stub
 
 class FloatReader(inputStream: InputStream) {
   val stream = new BufferedInputStream(inputStream)
@@ -25,7 +24,7 @@ class FloatReader(inputStream: InputStream) {
       }
     } catch {
       case e: EOFException => {
-        stream.close
+        stream.close()
         None
       }
     }

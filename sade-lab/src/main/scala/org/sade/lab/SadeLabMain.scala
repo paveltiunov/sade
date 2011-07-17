@@ -3,7 +3,7 @@ package org.sade.lab
 import plot.PlotPanel
 import swing.{MainFrame, SimpleSwingApplication}
 import java.awt.Dimension
-import org.sade.analyzers.{SignalAnalyzer, FloatReader}
+import org.sade.analyzers.{SignalAnalyzer}
 
 object SadeLabMain extends SimpleSwingApplication {
   def top = new MainFrame {
