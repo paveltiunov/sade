@@ -3,7 +3,8 @@ package org.sade.analyzers
 import java.io.{BufferedInputStream, EOFException, InputStream}
 import collection.mutable.Buffer
 
-class FloatReader(inputStream: InputStream) {
+class FloatReader(inputStream: InputStream, statusListener: Option[Float => Unit] = None) {
+  val streamSize = inputStream.available()
   val stream = new BufferedInputStream(inputStream)
   val buffered: Buffer[Float] = Buffer()
   val chunkSize = 32768
@@ -27,6 +28,7 @@ class FloatReader(inputStream: InputStream) {
         if (buffered.size < chunkSize) {
           buffered += float
         }
+        statusListener.foreach(_(1.0f - stream.available() * 1.0f / streamSize))
         Some(float)
       }
     } catch {

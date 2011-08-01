@@ -6,9 +6,9 @@ import scala.math._
 import javax.management.remote.rmi._RMIConnection_Stub
 import org.apache.commons.math.stat.StatUtils
 
-class SignalAnalyzer(inputStream: InputStream) {
+class SignalAnalyzer(inputStream: InputStream, statusListener: Option[Float => Unit] = None) {
   val analyzer = new JacobiAngerAnalyzer
-  val floatReader = new FloatReader(inputStream)
+  val floatReader = new FloatReader(inputStream, statusListener)
   val analyzeResults = estimateParameters.toArray
 
   def foundDeltaStream: Array[Double] = {
