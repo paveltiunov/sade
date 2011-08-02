@@ -9,6 +9,9 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import scala.concurrent.ops._
 import java.io.{File, FileInputStream}
 import org.sade.binding.{BindProgressBar, BindPlotPanel, BindLabel, BindField}
+import actors.threadpool.AtomicInteger
+import concurrent.JavaConversions
+import java.util.concurrent.Executors
 
 object SadeLabMain extends SimpleSwingApplication with NimbusLookAndFeel {
   def top = new MainFrame {
@@ -32,6 +35,7 @@ object SadeLabMain extends SimpleSwingApplication with NimbusLookAndFeel {
 }
 
 class AnalyzeForm(file: File) extends Frame {
+  implicit val runner = JavaConversions.asTaskRunner(Executors.newSingleThreadExecutor())
   size = new Dimension(800, 600)
   title = file.getAbsolutePath
 
@@ -41,14 +45,55 @@ class AnalyzeForm(file: File) extends Frame {
 
     object analyzeProgress extends BindField[Int]
 
+    val lastProcessingToken = new AtomicInteger()
   }
 
-  spawn {
-    val signalAnalyzer = new SignalAnalyzer(
-      new FileInputStream(file),
-      Some(i => AnalyzerModel.analyzeProgress.set(math.round(i*100)))
-    )
-    AnalyzerModel.signalAnalyzer.set(signalAnalyzer)
+  initFileMonitorAndStartAnalyze()
+
+  private var lastModified: Long = file.lastModified()
+
+  private def checkFileChanged() {
+    spawn {
+      if (file.lastModified() > lastModified) {
+        lastModified = file.lastModified()
+        startAnalyze()
+        checkFileChanged()
+      } else {
+        Thread.sleep(1000)
+        checkFileChanged()
+      }
+    }
+  }
+
+  private def initFileMonitorAndStartAnalyze() {
+    startAnalyze()
+    checkFileChanged()
+  }
+
+  def isProcessingTokenIsCurrent(processingToken: Int): Boolean = {
+    AnalyzerModel.lastProcessingToken.get() == processingToken
+  }
+
+  private def startAnalyze() {
+    if (file.exists()) {
+      spawn {
+        val fileInputStream = new FileInputStream(file)
+        try {
+          val processingToken = AnalyzerModel.lastProcessingToken.incrementAndGet()
+          val signalAnalyzer = new SignalAnalyzer(
+            fileInputStream,
+            Some(i => {
+              if (isProcessingTokenIsCurrent(processingToken))
+                AnalyzerModel.analyzeProgress.set(math.round(i * 100))
+            })
+          )
+          if (isProcessingTokenIsCurrent(processingToken))
+            AnalyzerModel.signalAnalyzer.set(signalAnalyzer)
+        } finally {
+          fileInputStream.close()
+        }
+      }
+    }
   }
 
   contents = new BorderPanel {
