@@ -43,10 +43,8 @@
     </dependencyManagement>
 
     <modules>
-        <module>sade-web</module>
-        <module>sade-ear</module>
-        <module>sade-ejb</module>
         <module>sade-lab</module>
+        <module>sade-web</module>
     </modules>
 
     <repositories>
