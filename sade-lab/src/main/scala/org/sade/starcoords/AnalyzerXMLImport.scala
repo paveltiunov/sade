@@ -22,8 +22,7 @@ object AnalyzerXMLImport {
 
   private def parseNode(node: Node) = {
     import Directions._
-    SkyMapPoint(
-      nodeValue(node, "StandardDeviation").toDouble,
+    SkyMapPoint(MeasuredPointCoordinates(
       parseDate(nodeValue(node, "Time").replace("+", "GMT+").replaceFirst("\\.\\d+GMT\\+", "GMT+")),
       intNodeValue(node, "PointIndex"),
       intNodeValue(node, "PointCount"),
@@ -31,7 +30,8 @@ object AnalyzerXMLImport {
       nodeValue(node, "Direction") match {
         case "FORWARD" => Forward
         case "BACKWARD" => Backward
-      },
+      }),
+      nodeValue(node, "StandardDeviation").toDouble,
       nodeValue(node, "Value").toDouble
     )
   }
@@ -42,13 +42,17 @@ object AnalyzerXMLImport {
   }
 }
 
+case class MeasuredPointCoordinates(
+                                     time: Date,
+                                     pointIndex: Int,
+                                     pointCount: Int,
+                                     dirIndex: Int,
+                                     direction: Directions.Direction
+                                     )
+
 case class SkyMapPoint(
+                        coordinates: MeasuredPointCoordinates,
                         standardDeviation: Double,
-                        time: Date,
-                        pointIndex: Int,
-                        pointCount: Int,
-                        dirIndex: Int,
-                        direction: Directions.Direction,
                         value: Double
                         ) {
   def rotationAngle = (direction match {
@@ -57,6 +61,12 @@ case class SkyMapPoint(
   }) * 360.0 / pointCount
 
   def standCoordinate = StandCoordinate(rotationAngle, time)
+
+  def time = coordinates.time
+  def pointIndex = coordinates.pointIndex
+  def pointCount = coordinates.pointCount
+  def dirIndex = coordinates.dirIndex
+  def direction = coordinates.direction
 }
 
 object Directions extends Enumeration {
