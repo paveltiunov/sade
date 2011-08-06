@@ -1,8 +1,9 @@
 package org.sade.starcoords
 
 import xml.{Node, NodeSeq}
+import java.text.SimpleDateFormat
 import java.util.Date
-import java.text.{ParseException, SimpleDateFormat, DateFormat}
+import scala.Enumeration
 
 object AnalyzerXMLImport {
   private val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssz")
@@ -20,6 +21,7 @@ object AnalyzerXMLImport {
   }
 
   private def parseNode(node: Node) = {
+    import Directions._
     SkyMapPoint(
       nodeValue(node, "StandardDeviation").toDouble,
       parseDate(nodeValue(node, "Time").replace("+", "GMT+").replaceFirst("\\.\\d+GMT\\+", "GMT+")),
@@ -46,17 +48,19 @@ case class SkyMapPoint(
                         pointIndex: Int,
                         pointCount: Int,
                         dirIndex: Int,
-                        direction: Direction,
+                        direction: Directions.Direction,
                         value: Double
                         ) {
   def rotationAngle = (direction match {
-    case Forward => pointIndex
-    case Backward => pointCount - pointIndex
+    case Directions.Forward => pointIndex
+    case Directions.Backward => pointCount - pointIndex
   }) * 360.0 / pointCount
 
   def standCoordinate = StandCoordinate(rotationAngle, time)
 }
 
-trait Direction
-case object Forward extends Direction
-case object Backward extends Direction
+object Directions extends Enumeration {
+  type Direction = Value
+  val Forward = Value(1, "Forward")
+  val Backward = Value(2, "Backward")
+}

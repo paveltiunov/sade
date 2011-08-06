@@ -39,6 +39,16 @@
                 <version>6.0</version>
                 <scope>provided</scope>
             </dependency>
+            <dependency>
+                <groupId>org.sade</groupId>
+                <artifactId>sade-lab</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>3.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

@@ -5,7 +5,7 @@ import org.scalatest.matchers.MustMatchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import java.util.GregorianCalendar
-import org.sade.starcoords.{Forward, AnalyzerXMLImport}
+import org.sade.starcoords.{Directions, AnalyzerXMLImport}
 
 @RunWith(classOf[JUnitRunner])
 class AnalyzerXMLImport extends Spec with MustMatchers {
@@ -43,7 +43,7 @@ class AnalyzerXMLImport extends Spec with MustMatchers {
       result(1).time must be (new GregorianCalendar(2010, 2, 27, 10, 25, 48).getTime)
       result(0).pointCount must be (78)
       result(0).pointIndex must be (0)
-      result(0).direction must be (Forward)
+      result(0).direction must be (Directions.Forward)
       result(0).dirIndex must be (0)
       result(0).rotationAngle must be (0)
     }
