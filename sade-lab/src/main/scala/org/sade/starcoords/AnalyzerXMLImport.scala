@@ -50,6 +50,28 @@ case class MeasuredPointCoordinates(
                                      direction: Directions.Direction
                                      )
 
+object MeasuredPointCoordinates {
+  def toMap(coords: MeasuredPointCoordinates): Map[String, String] = {
+    Map(
+      "time" -> coords.time.getTime.toString,
+      "pointIndex" -> coords.pointIndex.toString,
+      "pointCount" -> coords.pointCount.toString,
+      "dirIndex" -> coords.dirIndex.toString,
+      "direction" -> coords.direction.id.toString
+    )
+  }
+
+  def fromMap(map: Map[String, String]): MeasuredPointCoordinates = {
+    MeasuredPointCoordinates(
+      new Date(map("time").toLong),
+      map("pointIndex").toInt,
+      map("pointCount").toInt,
+      map("dirIndex").toInt,
+      Directions(map("direction").toInt)
+    )
+  }
+}
+
 case class SkyMapPoint(
                         coordinates: MeasuredPointCoordinates,
                         standardDeviation: Double,

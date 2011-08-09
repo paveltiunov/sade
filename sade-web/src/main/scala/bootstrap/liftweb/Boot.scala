@@ -19,6 +19,9 @@ class Boot {
     // Build SiteMap
     val entries = Menu(Loc("Home", List("index"), "Home")) :: Nil
     LiftRules.setSiteMap(SiteMap(entries:_*))
+    LiftRules.liftRequest.prepend {
+      case Req("upload-point" :: Nil, _, _) => false
+    }
   }
 }
 

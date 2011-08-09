@@ -2,19 +2,10 @@ import _root_.org.mortbay.jetty.Connector
 import _root_.org.mortbay.jetty.Server
 import _root_.org.mortbay.jetty.webapp.WebAppContext
 import org.mortbay.jetty.nio._
+import org.sade.WebServerRunner
 
-object RunWebApp extends Application {
-  val server = new Server
-  val scc = new SelectChannelConnector
-  scc.setPort(8080)
-  server.setConnectors(Array(scc))
-
-  val context = new WebAppContext()
-  context.setServer(server)
-  context.setContextPath("/")
-  context.setWar("sade-web/src/main/webapp")
-
-  server.addHandler(context)
+object RunWebApp extends Application with WebServerRunner{
+  val server = prepareJetty
 
   try {
     println(">>> STARTING EMBEDDED JETTY SERVER, PRESS ANY KEY TO STOP")
@@ -25,7 +16,7 @@ object RunWebApp extends Application {
     server.stop()
     server.join()
   } catch {
-    case exc : Exception => {
+    case exc: Exception => {
       exc.printStackTrace()
       System.exit(100)
     }
