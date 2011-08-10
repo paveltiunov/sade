@@ -1,9 +1,8 @@
 package org.sade.model
 
-import java.sql.Date
-import org.sade.starcoords.Directions
 import org.squeryl.{KeyedEntity, Schema}
-import java.util.UUID
+import org.sade.starcoords.{MeasuredPointCoordinates, Directions}
+import java.sql.{Timestamp}
 
 
 object SadeDB extends Schema {
@@ -12,12 +11,17 @@ object SadeDB extends Schema {
 
 case class PointContent(
                          content: Array[Byte],
-                         time: Date,
+                         id: Timestamp,
                          pointIndex: Int,
                          pointCount: Int,
                          dirIndex: Int,
-                         direction: Directions.Direction,
-                         id: UUID = UUID.randomUUID()
-                         ) extends KeyedEntity[UUID] {
+                         direction: Directions.Direction
+                         ) extends KeyedEntity[Timestamp] {
   def this() = this (null, null, 0, 0, 0, Directions.Forward)
+}
+
+object PointContent {
+  def apply(content: Array[Byte], coordinate: MeasuredPointCoordinates): PointContent = {
+    PointContent(content, new Timestamp(coordinate.time.getTime), coordinate.pointIndex, coordinate.pointCount, coordinate.dirIndex, coordinate.direction)
+  }
 }
