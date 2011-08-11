@@ -16,7 +16,7 @@ class PointUploadServletTest extends WebServerRunner with MustMatchersForJUnit {
     val jetty = prepareJetty
     jetty.start()
 
-    val uploader = new PointUploader
+    val uploader = new PointUploader("http://localhost:8080")
     val pointSource = PointSource(
       MeasuredPointCoordinates(new Date(5000), 1, 2, 3, Directions.Backward), () => "foo".getBytes
     )
