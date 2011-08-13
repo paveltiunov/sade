@@ -9,7 +9,7 @@ import org.squeryl.adapters.H2Adapter
 import org.squeryl.{PrimitiveTypeMode, SessionFactory, Session}
 
 trait WebServerRunner extends PrimitiveTypeMode {
-  def prepareJetty = {
+  def prepareJetty(jdbcUrl: String = "jdbc:h2:mem:") = {
     val server = new Server
     val scc = new SelectChannelConnector
     scc.setPort(8080)
@@ -22,7 +22,7 @@ trait WebServerRunner extends PrimitiveTypeMode {
 
     server.addHandler(context)
     val source = new ComboPooledDataSource()
-    source.setJdbcUrl("jdbc:h2:mem:")
+    source.setJdbcUrl(jdbcUrl)
     SessionFactory.concreteFactory = Some(() => {
       Session.create(source.getConnection, new H2Adapter)
     })

@@ -10,7 +10,7 @@ import org.scalatest.junit.MustMatchersForJUnit
 import org.junit.{After, Before, Test}
 
 class PointUploadServletTest extends WebServerRunner with MustMatchersForJUnit {
-  val jetty = prepareJetty
+  val jetty = prepareJetty()
 
   @Before
   def setup() {

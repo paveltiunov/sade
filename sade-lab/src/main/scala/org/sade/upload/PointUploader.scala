@@ -21,11 +21,11 @@ class PointUploader(serverUrl: String) {
       val method = new PostMethod(serverUrl + "/upload-point")
       MeasuredPointCoordinates.toMap(point.coordinate).foreach(t => method.setRequestHeader(t._1, t._2))
       method.setRequestEntity(new ByteArrayRequestEntity(point.content(), "binary/octet-stream"))
-      val uploadConflict = httpClient.executeMethod(method).ensuring(r => r == 200 || r == 409) == 200
-      if (uploadConflict) {
+      val isOk = httpClient.executeMethod(method).ensuring(r => r == 200 || r == 409) == 200
+      if (!isOk) {
         updateLoadedIds()
       }
-      uploadConflict
+      isOk
     } else false
   }
 

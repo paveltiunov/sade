@@ -12,7 +12,7 @@ import org.sade.starcoords.Directions
 class AllPointIdViewTest extends WebServerRunner with MustMatchersForJUnit with PrimitiveTypeMode {
   @Test
   def gutter() {
-    val jetty = prepareJetty
+    val jetty = prepareJetty()
     jetty.start()
 
     inTransaction {

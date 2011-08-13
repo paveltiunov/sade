@@ -5,7 +5,7 @@ import org.mortbay.jetty.nio._
 import org.sade.WebServerRunner
 
 object RunWebApp extends Application with WebServerRunner{
-  val server = prepareJetty
+  val server = prepareJetty("jdbc:h2:~/sade")
 
   try {
     println(">>> STARTING EMBEDDED JETTY SERVER, PRESS ANY KEY TO STOP")
