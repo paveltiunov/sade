@@ -7,6 +7,10 @@ import java.sql.{Timestamp}
 
 object SadeDB extends Schema {
   val pointContents = table[PointContent]()
+
+  val analyzeResults = table[AnalyzeResult]()
+
+  val analyzeTokens = table[AnalyzeToken]()
 }
 
 case class PointContent(
@@ -18,6 +22,22 @@ case class PointContent(
                          direction: Directions.Direction
                          ) extends KeyedEntity[Timestamp] {
   def this() = this (null, null, 0, 0, 0, Directions.Forward)
+}
+
+case class AnalyzeResult(
+                          id: Timestamp,
+                          meanValue: Double,
+                          absoluteError: Double,
+                          meanFrequency: Double
+                          ) extends KeyedEntity[Timestamp] {
+  def this() = this(null, 0, 0, 0)
+}
+
+case class AnalyzeToken(
+                          id: Timestamp,
+                          analyzeStarted: Timestamp
+                         ) extends KeyedEntity[Timestamp] {
+  def this() = this(null, null)
 }
 
 object PointContent {
