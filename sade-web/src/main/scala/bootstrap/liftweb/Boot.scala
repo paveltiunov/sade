@@ -18,7 +18,9 @@ class Boot {
     LiftRules.addToPackages("org.sade")
 
     // Build SiteMap
-    val entries = Menu(Loc("Home", List("index"), "Home")) :: Nil
+    val entries = Menu(
+      Loc("Home", List("index"), "Home")
+    ) :: Menu(Loc("Analyze results", List("analyze-result"), "Analyze results")) :: Nil
     LiftRules.setSiteMap(SiteMap(entries:_*))
     LiftRules.liftRequest.prepend {
       case Req("upload-point" :: Nil, _, _) => false
