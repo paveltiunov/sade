@@ -12,18 +12,7 @@ import org.slf4j.LoggerFactory
 trait WebServerRunner extends PrimitiveTypeMode {
   val logger = LoggerFactory.getLogger(getClass)
 
-  def prepareJetty(jdbcUrl: String = "jdbc:h2:mem:") = {
-    val server = new Server
-    val scc = new SelectChannelConnector
-    scc.setPort(8080)
-    server.setConnectors(Array(scc))
-
-    val context = new WebAppContext()
-    context.setServer(server)
-    context.setContextPath("/")
-    context.setWar("sade-web/src/main/webapp")
-
-    server.addHandler(context)
+  def prepareDataSource(jdbcUrl: String) {
     val source = new ComboPooledDataSource()
     source.setJdbcUrl(jdbcUrl)
     SessionFactory.concreteFactory = Some(() => {
@@ -37,6 +26,22 @@ trait WebServerRunner extends PrimitiveTypeMode {
         case e: Exception => logger.error("Errors during schema install", e)
       }
     }
+  }
+
+  def prepareJetty(jdbcUrl: String = "jdbc:h2:mem:") = {
+    prepareDataSource(jdbcUrl)
+
+    val server = new Server
+    val scc = new SelectChannelConnector
+    scc.setPort(8080)
+    server.setConnectors(Array(scc))
+
+    val context = new WebAppContext()
+    context.setServer(server)
+    context.setContextPath("/")
+    context.setWar("sade-web/src/main/webapp")
+
+    server.addHandler(context)
 
     server
   }

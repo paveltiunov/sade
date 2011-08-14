@@ -8,6 +8,11 @@ class WorkerInitServlet extends HttpServlet {
   val worker = new MainWorker()
 
   override def init() {
-    worker.startWorking()
+    if (!WorkerInitServlet.inTest)
+      worker.startWorking()
   }
+}
+
+object WorkerInitServlet {
+  var inTest: Boolean = false
 }

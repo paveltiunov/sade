@@ -6,6 +6,8 @@ import org.sade.starcoords.MeasuredPointCoordinates
 import java.util.Date
 import org.apache.commons.httpclient.methods.{GetMethod, ByteArrayRequestEntity, PostMethod}
 import xml.XML
+import org.apache.commons.httpclient.methods.multipart._
+import org.apache.commons.httpclient.params.HttpMethodParams
 
 class PointUploader(serverUrl: String) {
   val httpClient = {
@@ -20,7 +22,11 @@ class PointUploader(serverUrl: String) {
     if (!loadedIds.contains(point.coordinate.time)) {
       val method = new PostMethod(serverUrl + "/upload-point")
       MeasuredPointCoordinates.toMap(point.coordinate).foreach(t => method.setRequestHeader(t._1, t._2))
-      method.setRequestEntity(new ByteArrayRequestEntity(point.content(), "binary/octet-stream"))
+      val fileName = point.coordinate.time.toString
+      val entity = new MultipartRequestEntity(Array(
+        new FilePart(fileName, new ByteArrayPartSource(fileName, point.content()))
+      ),  new HttpMethodParams())
+      method.setRequestEntity(entity)
       val isOk = httpClient.executeMethod(method).ensuring(r => r == 200 || r == 409) == 200
       if (!isOk) {
         updateLoadedIds()

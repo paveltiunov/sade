@@ -7,19 +7,23 @@ import java.util.Date
 import org.sade.starcoords.{Directions, MeasuredPointCoordinates}
 import org.sade.model.SadeDB
 import org.scalatest.junit.MustMatchersForJUnit
-import org.junit.{After, Before, Test}
+import org.junit.{Assert, After, Before, Test}
 
 class PointUploadServletTest extends WebServerRunner with MustMatchersForJUnit {
   val jetty = prepareJetty()
+  val bytes = (0 until 540000).map(_.toString).mkString(" ").getBytes
 
   @Before
   def setup() {
+    WorkerInitServlet.inTest = true
     jetty.start()
   }
 
   def createPointSource(date: Date) = {
     PointSource(
-      MeasuredPointCoordinates(date, 1, 2, 3, Directions.Backward), () => "foo".getBytes
+      MeasuredPointCoordinates(date, 1, 2, 3, Directions.Backward), () => {
+        bytes
+      }
     )
   }
 
@@ -34,11 +38,17 @@ class PointUploadServletTest extends WebServerRunner with MustMatchersForJUnit {
     uploader.loadedIds ++= Set(new Date(123))
     uploader.uploadPoint(createPointSource(new Date(123))) must be (false)
 
-    inTransaction {
+    val actualBytes = inTransaction {
       from(SadeDB.pointContents) {
         p => select(p)
-      }.iterator.size must be(1)
+      }.single.content
     }
+
+    actualBytes.size must be (bytes.size)
+
+    bytes.zip(actualBytes).zipWithIndex.foreach{case ((b1, b2), i) => {
+      Assert.assertEquals("at index " + i, b1, b2)
+    }}
   }
 
   @After
