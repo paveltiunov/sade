@@ -6,9 +6,12 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 import java.sql.Timestamp
 import org.sade.model.{AnalyzeToken, AnalyzeResult, SadeDB}
+import org.slf4j.LoggerFactory
 
 
 class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode {
+  val logger = LoggerFactory.getLogger(getClass)
+
   def analyzeNextPoint() = {
     val fiveMinutesAgo = new Timestamp(new Date().getTime - 5 * 60 * 1000)
     val now = new Timestamp(new Date().getTime)
@@ -19,7 +22,7 @@ class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode 
           notExists(from(SadeDB.analyzeTokens) {t => where(t.id === c.id) select(t)})
         )
           select(c)
-      ).headOption
+      ).forUpdate.headOption
 
       notAnalyzedPoint.foreach(p => SadeDB.analyzeTokens.insert(AnalyzeToken(p.id, now)))
 
@@ -33,6 +36,7 @@ class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode 
       })
     }
     notAnalyzedPoint.foreach(point => {
+      logger.info("Start work on point timed at: " + point.id)
       val analyzer = analyzerFactory.createAnalyzer(new ByteArrayInputStream(point.content))
       inTransaction {
         SadeDB.analyzeResults.insert(AnalyzeResult(point.id, analyzer.meanValue, analyzer.absoluteError, analyzer.meanFrequency))

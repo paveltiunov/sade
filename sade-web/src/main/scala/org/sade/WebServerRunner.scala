@@ -7,8 +7,11 @@ import org.mortbay.jetty.webapp.WebAppContext
 import com.mchange.v2.c3p0.ComboPooledDataSource
 import org.squeryl.adapters.H2Adapter
 import org.squeryl.{PrimitiveTypeMode, SessionFactory, Session}
+import org.slf4j.LoggerFactory
 
 trait WebServerRunner extends PrimitiveTypeMode {
+  val logger = LoggerFactory.getLogger(getClass)
+
   def prepareJetty(jdbcUrl: String = "jdbc:h2:mem:") = {
     val server = new Server
     val scc = new SelectChannelConnector
@@ -28,7 +31,11 @@ trait WebServerRunner extends PrimitiveTypeMode {
     })
 
     inTransaction {
-      SadeDB.create
+      try {
+        SadeDB.create
+      } catch {
+        case e: Exception => logger.error("Errors during schema install", e)
+      }
     }
 
     server

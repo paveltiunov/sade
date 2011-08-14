@@ -32,6 +32,12 @@
         <servlet-class>org.sade.servlet.PointUploadServlet</servlet-class>
     </servlet>
 
+    <servlet>
+        <servlet-name>WorkerInitServlet</servlet-name>
+        <servlet-class>org.sade.servlet.WorkerInitServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
     <servlet-mapping>
         <servlet-name>PointUploadServlet</servlet-name>
         <url-pattern>/upload-point</url-pattern>
