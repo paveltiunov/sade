@@ -6,7 +6,7 @@ import _root_.net.liftweb.http._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
 import Helpers._
-import org.sade.view.AllPointIdView
+import org.sade.view.{AnalyzeResultImageView, AllPointIdView}
 
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -29,6 +29,7 @@ class Boot {
     LiftRules.dispatch.prepend {
       case Req("loaded-point-ids" :: Nil, _, _) => new AllPointIdView().dispatch _
     }
+    LiftRules.dispatch.prepend(new AnalyzeResultImageView().dispatch)
   }
 }
 

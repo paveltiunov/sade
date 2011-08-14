@@ -80,16 +80,20 @@ case class StarCoordsPainter(points: Seq[SkyMapPoint], viewMode: ViewMode, width
   }
 
   def paint(g: Graphics2D) {
+    g.setBackground(Color.white)
     g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
     g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY)
+
     g.clearRect(0, 0, width, height)
     val border = 10
     g.scale((width - border*2) * 1.0 / width, (height - border*2) * 1.0 / height)
     g.translate(border, border)
 
-    viewMode match {
-      case Plane => planePlot(g)
-      case Galactic => galacticPlot(g)
+    if (!points.isEmpty) {
+      viewMode match {
+        case Plane => planePlot(g)
+        case Galactic => galacticPlot(g)
+      }
     }
   }
 }
