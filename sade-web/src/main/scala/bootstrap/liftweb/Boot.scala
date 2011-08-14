@@ -26,8 +26,6 @@ class Boot {
       case Req("upload-point" :: Nil, _, _) => false
     }
 
-    LiftRules.onBeginServicing
-
     LiftRules.dispatch.prepend {
       case Req("loaded-point-ids" :: Nil, _, _) => new AllPointIdView().dispatch _
     }
