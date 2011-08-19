@@ -17,15 +17,19 @@ class AnalyzeWorkerTest extends MemoryDBTest with PrimitiveTypeMode with MustMat
   val worker = new AnalyzeWorker(analyzerFactory)
 
   def checkResultCount(c: Int = 1) {
-    from(SadeDB.analyzeResults) {
-      r => compute(count())
-    }.head.measures must be(c)
+    inTransaction {
+      from(SadeDB.analyzeResults) {
+        r => compute(count())
+      }.head.measures must be(c)
+    }
   }
 
 
   @Before
   def setup() {
-    SadeDB.pointContents.insert(PointContent("foo".getBytes, new Timestamp(123), 1, 2, 3, Directions.Forward))
+    inTransaction {
+      SadeDB.pointContents.insert(PointContent("foo".getBytes, new Timestamp(123), 1, 2, 3, Directions.Forward))
+    }
   }
 
   @Test
@@ -38,16 +42,22 @@ class AnalyzeWorkerTest extends MemoryDBTest with PrimitiveTypeMode with MustMat
 
   @Test
   def alreadyAnalyzing() {
-    SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime)))
+    inTransaction {
+      SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime)))
+    }
     worker.analyzeNextPoint() must be (false)
     checkResultCount(0)
   }
 
   @Test
   def analyzedButFailed() {
-    SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime - 6 * 60 * 1000)))
+    inTransaction {
+      SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime - 6 * 60 * 1000)))
+    }
     worker.analyzeNextPoint() must be (true)
-    SadeDB.analyzeTokens.where(_.analyzeStarted > new Timestamp(new Date().getTime - 2000)).iterator.size must be (1)
+    inTransaction {
+      SadeDB.analyzeTokens.where(_.analyzeStarted > new Timestamp(new Date().getTime - 2000)).iterator.size must be (1)
+    }
     checkResultCount(1)
   }
 }

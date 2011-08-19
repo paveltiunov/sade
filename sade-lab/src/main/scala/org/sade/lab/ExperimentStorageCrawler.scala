@@ -2,10 +2,8 @@ package org.sade.lab
 
 import java.util.Date
 import org.sade.starcoords.{Directions, MeasuredPointCoordinates}
-import java.io.File
-import java.nio.channels.FileChannel
-import java.nio.file.{Paths, StandardOpenOption}
 import java.nio.ByteBuffer
+import java.io.{FileInputStream, File}
 
 object ExperimentStorageCrawler {
   def crawl(directory: VirtualDirectory): Stream[PointSource] = {
@@ -60,13 +58,13 @@ case class VirtualDirectoryImpl(dir: File) extends VirtualDirectory {
 
 case class VirtualFileImpl(file: File) extends VirtualFile {
   def content = {
-    val channel = FileChannel.open(Paths.get(file.getAbsolutePath), StandardOpenOption.READ)
+    val fileInputStream = new FileInputStream(file)
     try {
-      val byteBuffer = ByteBuffer.allocate(channel.size().asInstanceOf[Int])
-      channel.read(byteBuffer)
-      byteBuffer.array()
+      val buffer = Array.ofDim[Byte](fileInputStream.available())
+      fileInputStream.read(buffer)
+      buffer
     } finally {
-      channel.close()
+      fileInputStream.close()
     }
   }
 

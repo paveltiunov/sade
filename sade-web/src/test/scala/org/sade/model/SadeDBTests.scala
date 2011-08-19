@@ -2,11 +2,12 @@ package org.sade.model
 
 import org.squeryl.Session
 import org.squeryl.adapters.H2Adapter
-import org.junit.{Before, Test}
 import org.scalatest.junit.MustMatchersForJUnit
 import org.squeryl.PrimitiveTypeMode._
 import java.sql.{Timestamp, DriverManager}
 import org.sade.starcoords.{MeasuredPointCoordinates, SkyMapPoint, Directions}
+import java.util.UUID
+import org.junit.{After, Before, Test}
 
 class SadeDBTests extends MustMatchersForJUnit with MemoryDBTest {
   val pointContent = PointContent("foo".getBytes, new Timestamp(123), 1, 2, 3, Directions.Backward)
@@ -41,10 +42,16 @@ class SadeDBTests extends MustMatchersForJUnit with MemoryDBTest {
 }
 
 trait MemoryDBTest {
+  val session = Session.create(DriverManager.getConnection("jdbc:h2:mem:" + UUID.randomUUID().toString), new H2Adapter)
+
   @Before
   def setupInMemoryDB() {
-    val session = Session.create(DriverManager.getConnection("jdbc:h2:mem:"), new H2Adapter)
     session.bindToCurrentThread
     SadeDB.create
+  }
+
+  @After
+  def tearDownDB() {
+    session.unbindFromCurrentThread
   }
 }

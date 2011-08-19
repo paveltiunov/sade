@@ -1,23 +1,18 @@
 package org.sade.servlet
 
-import org.sade.WebServerRunner
+import org.sade.StubWebServerRunner
 import org.sade.upload.PointUploader
 import org.sade.lab.PointSource
 import java.util.Date
 import org.sade.starcoords.{Directions, MeasuredPointCoordinates}
-import org.sade.model.SadeDB
 import org.scalatest.junit.MustMatchersForJUnit
 import org.junit.{Assert, After, Before, Test}
+import org.sade.model.PointContent._
+import java.sql.Timestamp
+import org.sade.model.{PointContent, SadeDB}
 
-class PointUploadServletTest extends WebServerRunner with MustMatchersForJUnit {
-  val jetty = prepareJetty()
+class PointUploadServletTest extends StubWebServerRunner with MustMatchersForJUnit {
   val bytes = (0 until 540000).map(_.toString).mkString(" ").getBytes
-
-  @Before
-  def setup() {
-    WorkerInitServlet.inTest = true
-    jetty.start()
-  }
 
   def createPointSource(date: Date) = {
     PointSource(
@@ -49,10 +44,5 @@ class PointUploadServletTest extends WebServerRunner with MustMatchersForJUnit {
     bytes.zip(actualBytes).zipWithIndex.foreach{case ((b1, b2), i) => {
       Assert.assertEquals("at index " + i, b1, b2)
     }}
-  }
-
-  @After
-  def tearDown() {
-    jetty.stop()
   }
 }

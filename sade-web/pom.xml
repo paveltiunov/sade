@@ -74,6 +74,12 @@
             <version>6.1.25</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mortbay.jetty</groupId>
+            <artifactId>jetty-naming</artifactId>
+            <version>6.1.25</version>
+            <scope>test</scope>
+        </dependency>
         <!-- for LiftConsole -->
         <dependency>
             <groupId>org.scala-lang</groupId>
@@ -84,7 +90,6 @@
         <dependency>
             <groupId>org.squeryl</groupId>
             <artifactId>squeryl_2.8.1</artifactId>
-            <version>0.9.4</version>
         </dependency>
         <dependency>
             <groupId>org.sade</groupId>
@@ -114,6 +119,10 @@
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.scala-tools</groupId>
                 <artifactId>maven-scala-plugin</artifactId>

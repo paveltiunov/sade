@@ -45,6 +45,12 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.sade</groupId>
+                <artifactId>sade-web</artifactId>
+                <version>${project.version}</version>
+                <type>war</type>
+            </dependency>
+            <dependency>
                 <groupId>com.google.inject</groupId>
                 <artifactId>guice</artifactId>
                 <version>3.0</version>
@@ -65,12 +71,18 @@
                 <version>1.8.5</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.squeryl</groupId>
+                <artifactId>squeryl_2.8.1</artifactId>
+                <version>0.9.4</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <modules>
         <module>sade-lab</module>
         <module>sade-web</module>
+        <module>sade-server</module>
     </modules>
 
     <repositories>
