@@ -17,7 +17,7 @@ object SadeServer extends Application with PrimitiveTypeMode {
     jdbcUrl match {
       case Some(url) => source.setJdbcUrl(url)
       case None => {
-        HServer.createTcpServer().start()
+        HServer.createTcpServer("-tcpAllowOthers").start()
         source.setJdbcUrl("jdbc:h2:tcp://localhost/~/sade")
       }
     }
