@@ -10,18 +10,18 @@ import java.util.UUID
 import org.junit.{After, Before, Test}
 
 class SadeDBTests extends MustMatchersForJUnit with MemoryDBTest {
-  val pointContent = PointContent("foo".getBytes, new Timestamp(123), 1, 2, 3, Directions.Backward)
+  val pointContent = Point(new Timestamp(123), 1, 2, 3, Directions.Backward)
 
   @Test
   def gutter() {
-    SadeDB.pointContents.insert(pointContent)
+    SadeDB.points.insert(pointContent)
 
-    SadeDB.pointContents.lookup(pointContent.id).get must be (pointContent)
+    SadeDB.points.lookup(pointContent.id).get must be (pointContent)
   }
 
   @Test
   def skyMapPoints() {
-    SadeDB.pointContents.insert(pointContent)
+    SadeDB.points.insert(pointContent)
     val result = AnalyzeResult(pointContent.id, 1, 2, 3)
     SadeDB.analyzeResults.insert(result)
 

@@ -6,10 +6,8 @@ import org.sade.lab.PointSource
 import java.util.Date
 import org.sade.starcoords.{Directions, MeasuredPointCoordinates}
 import org.scalatest.junit.MustMatchersForJUnit
-import org.junit.{Assert, After, Before, Test}
-import org.sade.model.PointContent._
-import java.sql.Timestamp
-import org.sade.model.{PointContent, SadeDB}
+import org.junit.{Assert, Test}
+import org.sade.model.{SadeDB}
 
 class PointUploadServletTest extends StubWebServerRunner with MustMatchersForJUnit {
   val bytes = (0 until 540000).map(_.toString).mkString(" ").getBytes
@@ -34,7 +32,7 @@ class PointUploadServletTest extends StubWebServerRunner with MustMatchersForJUn
     uploader.uploadPoint(createPointSource(new Date(123))) must be (false)
 
     val actualBytes = inTransaction {
-      from(SadeDB.pointContents) {
+      from(SadeDB.points) {
         p => select(p)
       }.single.content
     }

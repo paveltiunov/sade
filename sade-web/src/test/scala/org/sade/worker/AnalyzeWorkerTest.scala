@@ -5,13 +5,13 @@ import org.sade.analyzers.AnalyzerFactory
 import org.squeryl.PrimitiveTypeMode
 import org.scalatest.junit.MustMatchersForJUnit
 import java.sql.Timestamp
-import org.sade.starcoords.Directions
-import org.junit.{Before, Test}
-import org.sade.model.{AnalyzeToken, PointContent, SadeDB, MemoryDBTest}
+import org.junit.Test
+import org.sade.model.{AnalyzeToken, SadeDB, MemoryDBTest}
 import java.util.Date
+import org.sade.Fixtures
 
 
-class AnalyzeWorkerTest extends MemoryDBTest with PrimitiveTypeMode with MustMatchersForJUnit {
+class AnalyzeWorkerTest extends MemoryDBTest with PrimitiveTypeMode with MustMatchersForJUnit with Fixtures {
   val analyzerFactory = Mockito.mock(classOf[AnalyzerFactory], Mockito.RETURNS_DEEP_STUBS)
 
   val worker = new AnalyzeWorker(analyzerFactory)
@@ -26,7 +26,7 @@ class AnalyzeWorkerTest extends MemoryDBTest with PrimitiveTypeMode with MustMat
 
 
   def setup() {
-    SadeDB.pointContents.insert(PointContent("foo".getBytes, new Timestamp(123), 1, 2, 3, Directions.Forward))
+    setupPointContentFixture()
   }
 
   @Test

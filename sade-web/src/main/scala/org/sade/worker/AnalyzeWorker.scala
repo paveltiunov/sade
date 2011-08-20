@@ -6,13 +6,13 @@ import java.io.ByteArrayInputStream
 import java.util.Date
 import java.sql.Timestamp
 import org.slf4j.LoggerFactory
-import org.sade.model.{PointContent, AnalyzeToken, AnalyzeResult, SadeDB}
+import org.sade.model.{Point, AnalyzeToken, AnalyzeResult, SadeDB}
 
 
 class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode {
   val logger = LoggerFactory.getLogger(getClass)
 
-  def resultDoNotExists(c: PointContent) = {
+  def resultDoNotExists(c: Point) = {
     notExists(from(SadeDB.analyzeResults) {
       r => where(r.id === c.id) select (r)
     })
@@ -22,7 +22,7 @@ class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode 
     val fiveMinutesAgo = new Timestamp(new Date().getTime - 5 * 60 * 1000)
     val now = new Timestamp(new Date().getTime)
     val notAnalyzedPoint = inTransaction {
-      val notAnalyzedPoint = from(SadeDB.pointContents) ( c =>
+      val notAnalyzedPoint = from(SadeDB.points) ( c =>
         where(
           resultDoNotExists(c) and
           notExists(from(SadeDB.analyzeTokens) {t => where(t.id === c.id) select(t)})
@@ -32,7 +32,7 @@ class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode 
 
       notAnalyzedPoint.foreach(p => SadeDB.analyzeTokens.insert(AnalyzeToken(p.id, now)))
 
-      notAnalyzedPoint.orElse(from(SadeDB.pointContents, SadeDB.analyzeTokens)((content, token) => {
+      notAnalyzedPoint.orElse(from(SadeDB.points, SadeDB.analyzeTokens)((content, token) => {
         where((content.id === token.id) and resultDoNotExists(content) and (token.analyzeStarted lt fiveMinutesAgo)) select ((token,content))
       }).headOption.map {
         case (token, content) => {

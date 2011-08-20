@@ -4,13 +4,13 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import scala.collection.JavaConversions._
 import java.util.{Enumeration}
 import org.sade.starcoords.MeasuredPointCoordinates
-import org.sade.model.{PointContent, SadeDB}
 import org.squeryl.PrimitiveTypeMode
 import org.apache.commons.fileupload.servlet.ServletFileUpload
 import scala.collection.JavaConversions._
 import org.apache.commons.fileupload.FileItem
 import java.io.InputStream
 import org.apache.commons.fileupload.disk.DiskFileItemFactory
+import org.sade.model.{PointContent, Point, SadeDB}
 
 class PointUploadServlet extends HttpServlet with PrimitiveTypeMode {
   def readContent(inputStream: InputStream): Array[Byte] = {
@@ -25,10 +25,11 @@ class PointUploadServlet extends HttpServlet with PrimitiveTypeMode {
     val servletFileUpload = new ServletFileUpload(new DiskFileItemFactory())
     val fileItems = servletFileUpload.parseRequest(req).asInstanceOf[java.util.List[FileItem]]
     val buffer = readContent(fileItems.head.getInputStream)
-    val pointContent = PointContent(buffer, coordinates)
     inTransaction {
-      if (SadeDB.pointContents.lookup(pointContent.id).isEmpty) {
-        SadeDB.pointContents.insert(pointContent)
+      val pointContent = Point(coordinates)
+      if (SadeDB.points.lookup(pointContent.id).isEmpty) {
+        SadeDB.points.insert(pointContent)
+        SadeDB.pointContents.insert(PointContent(pointContent.id, buffer))
       } else {
         resp.setStatus(409)
       }
