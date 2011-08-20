@@ -43,7 +43,8 @@ class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode 
     }
     notAnalyzedPoint.foreach(point => {
       logger.info("Start work on point timed at: " + point.id)
-      val analyzer = analyzerFactory.createAnalyzer(new ByteArrayInputStream(point.content))
+      val content = inTransaction(point.content)
+      val analyzer = analyzerFactory.createAnalyzer(new ByteArrayInputStream(content))
       inTransaction {
         SadeDB.analyzeResults.insert(AnalyzeResult(point.id, analyzer.meanValue, analyzer.absoluteError, analyzer.meanFrequency))
       }
