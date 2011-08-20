@@ -25,15 +25,13 @@ class AnalyzeWorkerTest extends MemoryDBTest with PrimitiveTypeMode with MustMat
   }
 
 
-  @Before
   def setup() {
-    inTransaction {
-      SadeDB.pointContents.insert(PointContent("foo".getBytes, new Timestamp(123), 1, 2, 3, Directions.Forward))
-    }
+    SadeDB.pointContents.insert(PointContent("foo".getBytes, new Timestamp(123), 1, 2, 3, Directions.Forward))
   }
 
   @Test
   def gutter() {
+    setup()
     worker.analyzeNextPoint() must be (true)
     checkResultCount()
     worker.analyzeNextPoint() must be (false)
@@ -42,18 +40,16 @@ class AnalyzeWorkerTest extends MemoryDBTest with PrimitiveTypeMode with MustMat
 
   @Test
   def alreadyAnalyzing() {
-    inTransaction {
-      SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime)))
-    }
+    setup()
+    SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime)))
     worker.analyzeNextPoint() must be (false)
     checkResultCount(0)
   }
 
   @Test
   def analyzedButFailed() {
-    inTransaction {
-      SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime - 6 * 60 * 1000)))
-    }
+    setup()
+    SadeDB.analyzeTokens.insert(AnalyzeToken(new Timestamp(123), new Timestamp(new Date().getTime - 6 * 60 * 1000)))
     worker.analyzeNextPoint() must be (true)
     inTransaction {
       SadeDB.analyzeTokens.where(_.analyzeStarted > new Timestamp(new Date().getTime - 2000)).iterator.size must be (1)
