@@ -26,7 +26,7 @@ class UploaderForm(experimentDirectory: File, serverUrl: String) extends Frame {
         try {
           pointUploader.uploadPoint(source)
         } catch {
-          case e: Exception => e.printStackTrace()
+          case e: Throwable => e.printStackTrace()
         }
       }}
       Model.currentPointSource.set(null)
