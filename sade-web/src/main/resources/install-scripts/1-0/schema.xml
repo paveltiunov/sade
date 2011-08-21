@@ -1,0 +1,48 @@
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <changeSet id="schema" author="pavel.tiunov">
+        <createTable tableName="Point">
+            <column name="id" type="java.sql.Types.TIMESTAMP"/>
+            <column name="pointIndex" type="integer"/>
+            <column name="pointCount" type="integer"/>
+            <column name="dirIndex" type="integer"/>
+            <column name="direction" type="integer"/>
+        </createTable>
+
+        <createTable tableName="PointContent">
+            <column name="id" type="java.sql.Types.TIMESTAMP">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="content" type="BLOB"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="PointContent" baseColumnNames="id" constraintName="PointContent_FK"
+                                 referencedTableName="Point"
+                                 referencedColumnNames="id"/>
+
+        <createTable tableName="AnalyzeResult">
+            <column name="id" type="java.sql.Types.TIMESTAMP">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="meanValue" type="double"/>
+            <column name="absoluteError" type="double"/>
+            <column name="meanFrequency" type="double"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="AnalyzeResult" baseColumnNames="id" constraintName="AnalyzeResult_FK"
+                                 referencedTableName="Point"
+                                 referencedColumnNames="id"/>
+
+        <createTable tableName="AnalyzeToken">
+            <column name="id" type="java.sql.Types.TIMESTAMP">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="analyzeStarted" type="java.sql.Types.TIMESTAMP"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="AnalyzeToken" baseColumnNames="id" constraintName="AnalyzeToken_FK"
+                                         referencedTableName="Point"
+                                         referencedColumnNames="id"/>
+    </changeSet>
+</databaseChangeLog>
