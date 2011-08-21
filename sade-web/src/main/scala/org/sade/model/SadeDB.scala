@@ -21,6 +21,10 @@ object SadeDB extends Schema with PrimitiveTypeMode {
   }).map {
     case (content, result) => SkyMapPoint(content.coordinates, 0, result.meanValue)
   }
+
+  def pointCount = from(points) (p => compute(count(p.id))).head.measures
+
+  def analyzeResultCount = from(analyzeResults) (r => compute(count(r.id))).head.measures
 }
 
 case class Point(

@@ -1,9 +1,23 @@
 <lift:surround with="default" at="content">
-		<h2>Welcome to your project!</h2>
-		<p>
-      <lift:helloWorld.howdy>
-        <span>Welcome to sade-web at <b:time/></span>
-      </lift:helloWorld.howdy>
+    <h2>Welcome to SADE project!</h2>
+
+    <p>
+        Working hard on this page. Sorry for inconvenience.
     </p>
+    <lift:bind-at name="sidebar">
+        <h3>Links</h3>
+        <ul>
+            <li><a href="http://www.hyper-complex.ru">Hypercomplex.ru</a></li>
+            <li><a href="http://www.space-lab.ru/">Laborotory of moving media optics</a></li>
+            <li><a href="http://www.bmstu.ru/">BMSTU</a></li>
+        </ul>
+
+        <h3>Contact</h3>
+
+        <address>
+            <strong>SADE</strong><br/>
+            BMSTU, Moscow<br/>
+        </address>
+    </lift:bind-at>
 </lift:surround>
 

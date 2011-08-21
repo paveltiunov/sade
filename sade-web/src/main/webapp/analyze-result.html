@@ -1,14 +1,19 @@
 <lift:surround with="default" at="content">
-		<h2>Analyze results</h2>
-		<p>
-        <lift:bind-at name="sidebar">
-            <h3>View modes</h3>
-            <ul>
-                <li><a href="/analyze-result?mode=plane">Plane</a></li>
-                <li><a href="/analyze-result?mode=galactic">Galactic</a></li>
-            </ul>
-        </lift:bind-at>
-      <lift:AnalyzeResult/>
-    </p>
+      <lift:AnalyzeResult>
+          <h2>Analyze results</h2>
+          <p>
+          <img id="result-image"/>
+          <lift:bind-at name="sidebar">
+              <h3>Analyzed / Total</h3>
+              <div id="statistics"></div>
+              <h3>View modes</h3>
+              <div id="mode-selector"></div>
+              <h3>Logarithm scale</h3>
+              <div id="logarithm-selector"></div>
+              <h3>Mean filter</h3>
+              <div id="mean-filter-selector"></div>
+          </lift:bind-at>
+        </p>
+    </lift:AnalyzeResult>
 </lift:surround>
 
