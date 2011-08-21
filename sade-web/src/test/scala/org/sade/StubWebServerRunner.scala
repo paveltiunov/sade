@@ -34,7 +34,7 @@ trait StubWebServerRunner extends PrimitiveTypeMode {
 }
 
 object StubWebRunner {
-  val jdbcUrl = "jdbc:h2:mem:stub"
+  var jdbcUrl = "jdbc:h2:mem:stub"
 
   var prepared = false
 

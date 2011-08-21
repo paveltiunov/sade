@@ -11,13 +11,15 @@ import net.liftweb.http.js.JsCmds._
 
 class AnalyzeResult {
   def render(in: NodeSeq) = {
-    val timeOutCmd = Interval(intToTimeSpan(10000), JqId("result-image") ~> JqAttr("src", "/analyze-result-image"))
+    val viewMode = S.param("mode").openOr("plane")
+    val imageUrl = "/analyze-result-image?mode=" + viewMode
+    val timeOutCmd = Interval(intToTimeSpan(10000), JqId("result-image") ~> JqAttr("src", imageUrl))
     <head>
       {Script(
       JqOnLoad(timeOutCmd)
     )}
     </head>
-    <img src="/analyze-result-image" id="result-image"/>
+    <img src={imageUrl} id="result-image"/>
   }
 }
 
