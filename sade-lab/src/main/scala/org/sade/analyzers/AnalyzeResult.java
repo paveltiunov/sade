@@ -2,20 +2,28 @@ package org.sade.analyzers;
 
 public class AnalyzeResult
 {
-    private final MinimizeParameters parameters;
-    private final int period;
+    private final MinimizeResult result;
+    private final float realPeriod;
 
-    public AnalyzeResult(MinimizeParameters parameters, int period)
+    public AnalyzeResult(MinimizeResult minimizeResult, float realPeriod)
     {
-        this.parameters = parameters;
-        this.period = period;
+        this.result = minimizeResult;
+        this.realPeriod = realPeriod;
     }
 
     public MinimizeParameters getParameters() {
-        return parameters;
+        return result.getParameters();
+    }
+
+    public double getMinimizeError() {
+        return result.getError();
     }
 
     public int getPeriod() {
-        return period;
+        return Math.round(realPeriod);
+    }
+
+    public float getRealPeriod() {
+        return realPeriod;
     }
 }

@@ -73,11 +73,6 @@ public class JacobiAngerAnalyzer
         return lastAnalyzeResult == null;
     }
 
-    public void ResetAnalyze()
-    {
-        lastAnalyzeResult = null;
-    }
-
     public List<AnalyzeResult> DivideAndAnalyze(double[] sample)
     {
         List<AnalyzeResult> analyzeResults = new ArrayList<AnalyzeResult>();
@@ -92,22 +87,80 @@ public class JacobiAngerAnalyzer
 
         final double searchPeriodCoeff = 0.01;
 
-        for (; sample.length > Math.round(searchPeriod * (1 + searchPeriodCoeff))*2+1; sample = skip(sample, searchPeriod))
+        for (; sample.length > sizeForSearchPeriod(searchPeriod, searchPeriodCoeff); sample = skip(sample, searchPeriod))
         {
             double[] sampleToAnalyze = take(sample, searchPeriod);
             if (IsFirstAnalyze())
             {
-                lastAnalyzeResult = new AnalyzeResult(ScanForEntryParameters(sampleToAnalyze).getParameters(), searchPeriod);
+                lastAnalyzeResult = rescanAnalyze(searchPeriod, sampleToAnalyze);
             }
             else
             {
-                searchPeriod = SearchPeriod(sample, (int)Math.round(lastAnalyzeResult.getPeriod() * (1 - searchPeriodCoeff)), (int)Math.round(lastAnalyzeResult.getPeriod() * (1 + searchPeriodCoeff)));
-                lastAnalyzeResult = new AnalyzeResult(AnalyzeSample(sampleToAnalyze, lastAnalyzeResult.getParameters()).getParameters(), searchPeriod);
+                AnalyzeResult analyzeResult = analyzeNextByPrevious(sampleToAnalyze, searchPeriod);
+                if (isOverErrorThreshold(analyzeResult)) {
+                    searchPeriod = analyzeWithOversample(take(sample, sizeForSearchPeriod(searchPeriod, searchPeriodCoeff)), searchPeriodCoeff, sampleToAnalyze, 2);
+                } else {
+                    lastAnalyzeResult = analyzeResult;
+                }
             }
             analyzeResults.add(lastAnalyzeResult);
         }
         previousSamples = sample;
         return analyzeResults;
+    }
+
+    private int sizeForSearchPeriod(int searchPeriod, double searchPeriodCoeff) {
+        return (int)Math.round(searchPeriod * (1 + searchPeriodCoeff * 8))*2+1;
+    }
+
+    private int analyzeWithOversample(double[] sample, double searchPeriodCoeff, double[] sampleToAnalyze, int oversampleRate) {
+        double[] oversample = oversample(sample);
+        int doublePeriod = searchOversampledPeriod(searchPeriodCoeff, oversample, oversampleRate);
+        float realPeriod = 1.0f * doublePeriod / oversampleRate;
+        if (doublePeriod % 2 != 0 && oversampleRate < 128 || oversampleRate < 16) {
+            return analyzeWithOversample(oversample, searchPeriodCoeff, take(oversample, doublePeriod), oversampleRate * 2);
+        } else {
+            AnalyzeResult analyzeResult = analyzeNextByPrevious(sampleToAnalyze, realPeriod);
+            if (isOverErrorThreshold(analyzeResult)) {
+                lastAnalyzeResult = rescanAnalyze(realPeriod, sampleToAnalyze);
+            } else {
+                lastAnalyzeResult = analyzeResult;
+            }
+        }
+        return lastAnalyzeResult.getPeriod();
+    }
+
+    private boolean isOverErrorThreshold(AnalyzeResult analyzeResult) {
+        return analyzeResult.getMinimizeError() > 0.1;
+    }
+
+    private AnalyzeResult analyzeNextByPrevious(double[] sampleToAnalyze, float realPeriod) {
+        return new AnalyzeResult(AnalyzeSample(sampleToAnalyze, lastAnalyzeResult.getParameters()), realPeriod);
+    }
+
+    private double[] oversample(double[] sample) {
+        double[] result = new double[sample.length * 2 - 1];
+        for (int i = 0; i < sample.length - 1; i++) {
+            result[i * 2] = sample[i];
+            result[i * 2 + 1] = (sample[i] + sample[i + 1]) / 2;
+        }
+        result[result.length - 1] = sample[sample.length - 1];
+        return result;
+    }
+
+    private AnalyzeResult rescanAnalyze(float searchPeriod, double[] sampleToAnalyze) {
+        return new AnalyzeResult(ScanForEntryParameters(sampleToAnalyze), searchPeriod);
+    }
+
+    private int searchOversampledPeriod(double searchPeriodCoeff, double[] oversample, int oversampleRate) {
+        return SearchPeriod(oversample,
+                multiplyLastPeriodByPercent(-searchPeriodCoeff, lastAnalyzeResult.getPeriod() * oversampleRate),
+                multiplyLastPeriodByPercent(searchPeriodCoeff, lastAnalyzeResult.getPeriod() * oversampleRate)
+        );
+    }
+
+    private int multiplyLastPeriodByPercent(double coeff, int period) {
+        return (int) Math.round(period * (1 + coeff));
     }
 
     public static double[] take(double[] sample, int searchPeriod) {
@@ -136,7 +189,6 @@ public class JacobiAngerAnalyzer
 
     private MinimizeResult ScanForEntryParameters(double[] sampleToAnalyze)
     {
-        MinimizeResult result;
         List<MinimizeResult> results = new ArrayList<MinimizeResult>();
         for (int i = 0; i < phaseSlices; i++)
         {

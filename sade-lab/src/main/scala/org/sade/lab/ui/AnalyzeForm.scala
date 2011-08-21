@@ -1,7 +1,6 @@
 package org.sade.lab.ui
 
 import java.awt.Dimension
-import org.sade.analyzers.SignalAnalyzer
 import swing.TabbedPane.Page
 import swing._
 import swing.BorderPanel.Position
@@ -11,6 +10,7 @@ import org.sade.binding.{BindProgressBar, BindPlotPanel, BindLabel, BindField}
 import actors.threadpool.AtomicInteger
 import concurrent.JavaConversions
 import java.util.concurrent.Executors
+import org.sade.analyzers.{AnalyzeResult, SignalAnalyzer}
 
 class AnalyzeForm(file: File) extends Frame {
   implicit val runner = JavaConversions.asTaskRunner(Executors.newSingleThreadExecutor())
@@ -89,6 +89,15 @@ class AnalyzeForm(file: File) extends Frame {
           addLinePlot("Estimated signal", signalAnalyzer.estimatedSignal.toArray)
         }
       })
+      def analyzeResultPlotPage(label: String, analayzeResultFun: AnalyzeResult => Double) = {
+        new Page(label, new BindPlotPanel(AnalyzerModel.signalAnalyzer) {
+          def updatePlots(signalAnalyzer: SignalAnalyzer) {
+            addLinePlot(label, signalAnalyzer.analyzeResults.map(analayzeResultFun).toArray)
+          }
+        })
+      }
+      pages += analyzeResultPlotPage ("Period", _.getRealPeriod.toDouble)
+      pages += analyzeResultPlotPage ("Minimize error", _.getMinimizeError)
       pages += new Page("Statistics", new BorderPanel {
         val statistics = new GridPanel(4, 2) {
           contents += new Label("Mean value")
