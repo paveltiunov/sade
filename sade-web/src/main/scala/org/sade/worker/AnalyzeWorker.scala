@@ -18,28 +18,36 @@ class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode 
     })
   }
 
+  def findNeverAnalyzedPointAndInsertToken(now: Timestamp): Option[Point] = {
+    from(SadeDB.points)(c =>
+      where(
+        resultDoNotExists(c) and
+          notExists(from(SadeDB.analyzeTokens) {
+            t => where(t.id === c.id) select (t)
+          })
+      )
+        select (c)
+    ).forUpdate.headOption.map(p => {
+      SadeDB.analyzeTokens.insert(AnalyzeToken(p.id, now))
+      p
+    })
+  }
+
+  def findFailedAnalyzePointAndUpdateToken(now: Timestamp): Option[Point] = {
+    from(SadeDB.points, SadeDB.analyzeTokens)((content, token) => {
+      where((content.id === token.id) and resultDoNotExists(content) and (token.analyzeStarted lt new Timestamp(new Date().getTime - 5 * 60 * 1000))) select ((token, content))
+    }).forUpdate.headOption.map {
+      case (token, content) => {
+        SadeDB.analyzeTokens.update(token.copy(analyzeStarted = now))
+        content
+      }
+    }
+  }
+
   def analyzeNextPoint() = {
-    val fiveMinutesAgo = new Timestamp(new Date().getTime - 5 * 60 * 1000)
     val now = new Timestamp(new Date().getTime)
     val notAnalyzedPoint = inTransaction {
-      val notAnalyzedPoint = from(SadeDB.points) ( c =>
-        where(
-          resultDoNotExists(c) and
-          notExists(from(SadeDB.analyzeTokens) {t => where(t.id === c.id) select(t)})
-        )
-          select(c)
-      ).forUpdate.headOption
-
-      notAnalyzedPoint.foreach(p => SadeDB.analyzeTokens.insert(AnalyzeToken(p.id, now)))
-
-      notAnalyzedPoint.orElse(from(SadeDB.points, SadeDB.analyzeTokens)((content, token) => {
-        where((content.id === token.id) and resultDoNotExists(content) and (token.analyzeStarted lt fiveMinutesAgo)) select ((token,content))
-      }).headOption.map {
-        case (token, content) => {
-          SadeDB.analyzeTokens.update(token.copy(analyzeStarted = now))
-          content
-        }
-      })
+      findFailedAnalyzePointAndUpdateToken(now).orElse(findNeverAnalyzedPointAndInsertToken(now))
     }
     notAnalyzedPoint.foreach(point => {
       val timeMillis = System.currentTimeMillis()
