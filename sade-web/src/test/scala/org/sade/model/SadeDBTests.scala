@@ -10,7 +10,7 @@ import java.util.UUID
 import org.junit.{After, Before, Test}
 
 class SadeDBTests extends MustMatchersForJUnit with MemoryDBTest {
-  val pointContent = Point(new Timestamp(123), 1, 2, 3, Directions.Backward)
+  val pointContent = Point(new Timestamp(123), "foo", 1, 2, 3, Directions.Backward)
 
   @Test
   def gutter() {
@@ -25,7 +25,7 @@ class SadeDBTests extends MustMatchersForJUnit with MemoryDBTest {
     val result = AnalyzeResult(pointContent.id, 1, 2, 3)
     SadeDB.analyzeResults.insert(result)
 
-    SadeDB.skyMapPoints.head must be (
+    SadeDB.skyMapPoints("foo").head must be (
       SkyMapPoint(
         MeasuredPointCoordinates(
           pointContent.id,

@@ -22,6 +22,7 @@ class PointUploader(serverUrl: String) {
     if (!loadedIds.contains(point.coordinate.time)) {
       val method = new PostMethod(serverUrl + "/upload-point")
       MeasuredPointCoordinates.toMap(point.coordinate).foreach(t => method.setRequestHeader(t._1, t._2))
+      method.setRequestHeader("expName", point.expName)
       val fileName = point.coordinate.time.toString
       val entity = new MultipartRequestEntity(Array(
         new FilePart(fileName, new ByteArrayPartSource(fileName, point.content()))

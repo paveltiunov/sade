@@ -16,25 +16,28 @@ object SadeDB extends Schema with PrimitiveTypeMode {
 
   def contentByPoint(point: Point) = pointContents.lookup(point.id).get
 
-  def skyMapPoints: Iterable[SkyMapPoint] = from(points, analyzeResults) ((content, result) => {
-    where(content.id === result.id) select ((content, result))
+  def skyMapPoints(expName: String): Iterable[SkyMapPoint] = from(points, analyzeResults) ((content, result) => {
+    where((content.id === result.id) and (content.expName === expName)) select ((content, result))
   }).map {
     case (content, result) => SkyMapPoint(content.coordinates, 0, result.meanValue)
   }
 
-  def pointCount = from(points) (p => compute(count(p.id))).head.measures
+  def experiments = from(points) (p => groupBy(p.expName)).map(_.key)
 
-  def analyzeResultCount = from(analyzeResults) (r => compute(count(r.id))).head.measures
+  def pointCount(expName: String) = from(points) (p => where(p.expName === expName) compute(count(p.id))).head.measures
+
+  def analyzeResultCount(expName: String) = from(points, analyzeResults) ((p,r) => where((p.id === r.id) and (p.expName === expName)) compute(count(r.id))).head.measures
 }
 
 case class Point(
                          id: Timestamp,
+                         expName: String,
                          pointIndex: Int,
                          pointCount: Int,
                          dirIndex: Int,
                          direction: Directions.Direction
                          ) extends KeyedEntity[Timestamp] {
-  def this() = this (null, 0, 0, 0, Directions.Forward)
+  def this() = this (null, null, 0, 0, 0, Directions.Forward)
 
   def coordinates = MeasuredPointCoordinates(
     id,
@@ -66,7 +69,7 @@ case class AnalyzeToken(
 }
 
 object Point {
-  def apply(coordinate: MeasuredPointCoordinates): Point = {
-    Point(new Timestamp(coordinate.time.getTime), coordinate.pointIndex, coordinate.pointCount, coordinate.dirIndex, coordinate.direction)
+  def apply(coordinate: MeasuredPointCoordinates, expName: String): Point = {
+    Point(new Timestamp(coordinate.time.getTime), expName, coordinate.pointIndex, coordinate.pointCount, coordinate.dirIndex, coordinate.direction)
   }
 }

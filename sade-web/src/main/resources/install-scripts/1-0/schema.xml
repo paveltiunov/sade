@@ -7,6 +7,7 @@
     <changeSet id="schema" author="pavel.tiunov">
         <createTable tableName="Point">
             <column name="id" type="java.sql.Types.TIMESTAMP"/>
+            <column name="expName" type="varchar(4000)"/>
             <column name="pointIndex" type="integer"/>
             <column name="pointCount" type="integer"/>
             <column name="dirIndex" type="integer"/>

@@ -13,18 +13,18 @@ import AnalyzeResultImageView._
 
 class AnalyzeResultImageView extends PrimitiveTypeMode {
   def dispatch: PartialFunction[Req, () => Box[LiftResponse]] = {
-    case Req("analyze-result-image" :: Nil, _, _) => () => Full(drawImage())
+    case Req(Seq("analyze-result-image", expName), _, _) if SadeDB.experiments.exists(_ == expName) => () => Full(drawImage(expName))
   }
 
   def filterByFlag(flagParam: String, filterFun: (scala.Seq[SkyMapPoint]) => Seq[SkyMapPoint], points: Seq[SkyMapPoint]): Seq[SkyMapPoint] = {
     S.param(flagParam).map(_ => filterFun(points)).openOr(points)
   }
 
-  def drawImage() = {
+  def drawImage(expName: String) = {
     val width = 640
     val height = 480
     val bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-    var points = SadeDB.skyMapPoints.toSeq
+    var points = SadeDB.skyMapPoints(expName).toSeq
     points = filterByFlag(meanFilterParam, SkyMapFilter.averageFilter, points)
     points = filterByFlag(logarithmParam, SkyMapFilter.logarithmFilter, points)
     StarCoordsPainter(points, S.param(modeParam).map {

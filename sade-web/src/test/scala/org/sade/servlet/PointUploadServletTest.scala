@@ -14,7 +14,7 @@ class PointUploadServletTest extends StubWebServerRunner with MustMatchersForJUn
 
   def createPointSource(date: Date) = {
     PointSource(
-      MeasuredPointCoordinates(date, 1, 2, 3, Directions.Backward), () => {
+      MeasuredPointCoordinates(date, 1, 2, 3, Directions.Backward), "foo", () => {
         bytes
       }
     )

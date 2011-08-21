@@ -2,7 +2,6 @@ package org.sade.lab
 
 import java.util.Date
 import org.sade.starcoords.{Directions, MeasuredPointCoordinates}
-import java.nio.ByteBuffer
 import java.io.{FileInputStream, File}
 
 object ExperimentStorageCrawler {
@@ -21,6 +20,7 @@ object ExperimentStorageCrawler {
                 case "forward" => Directions.Forward
                 case "backward" => Directions.Backward
               }),
+            directory.name,
             f.content _
           )
         })
@@ -30,7 +30,7 @@ object ExperimentStorageCrawler {
 
 }
 
-case class PointSource(coordinate: MeasuredPointCoordinates, content: () => Array[Byte])
+case class PointSource(coordinate: MeasuredPointCoordinates, expName: String, content: () => Array[Byte])
 
 trait VirtualFile {
   def content: Array[Byte]

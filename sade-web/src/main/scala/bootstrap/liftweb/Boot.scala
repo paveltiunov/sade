@@ -17,9 +17,9 @@ import liquibase.resource.ClassLoaderResourceAccessor
 import liquibase.database.jvm.JdbcConnection
 
 /**
-  * A class that's instantiated early and run.  It allows the application
-  * to modify lift's environment
-  */
+ * A class that's instantiated early and run.  It allows the application
+ * to modify lift's environment
+ */
 class Boot extends PrimitiveTypeMode {
   val logger = LoggerFactory.getLogger(getClass)
 
@@ -48,10 +48,15 @@ class Boot extends PrimitiveTypeMode {
     LiftRules.addToPackages("org.sade")
 
     // Build SiteMap
-    val entries = Menu(
-      Loc("Home", List("index"), "Home")
-    ) :: Menu(Loc("Analyze results", List("analyze-result"), "Analyze results")) :: Nil
-    LiftRules.setSiteMap(SiteMap(entries:_*))
+    LiftRules.setSiteMap(
+      SiteMap(
+        Menu(
+          Loc("Home", List("index"), "Home")
+        ),
+        Menu("Analyze results") / "analyze_result" / ** >> Hidden,
+        Menu("Experiments") / "experiments"
+      )
+    )
     LiftRules.liftRequest.prepend {
       case Req("upload-point" :: Nil, _, _) => false
     }

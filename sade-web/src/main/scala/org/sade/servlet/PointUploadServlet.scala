@@ -22,11 +22,12 @@ class PointUploadServlet extends HttpServlet with PrimitiveTypeMode {
   override def doPost(req: HttpServletRequest, resp: HttpServletResponse) {
     val headerMap = req.getHeaderNames.asInstanceOf[Enumeration[String]].map(s => s -> req.getHeader(s)).toMap
     val coordinates = MeasuredPointCoordinates.fromMap(headerMap)
+    val expName = headerMap("expName")
     val servletFileUpload = new ServletFileUpload(new DiskFileItemFactory())
     val fileItems = servletFileUpload.parseRequest(req).asInstanceOf[java.util.List[FileItem]]
     val buffer = readContent(fileItems.head.getInputStream)
     inTransaction {
-      val pointContent = Point(coordinates)
+      val pointContent = Point(coordinates, expName)
       if (SadeDB.points.lookup(pointContent.id).isEmpty) {
         SadeDB.points.insert(pointContent)
         SadeDB.pointContents.insert(PointContent(pointContent.id, buffer))
