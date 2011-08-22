@@ -8,6 +8,8 @@ import org.apache.commons.httpclient.methods.{GetMethod, ByteArrayRequestEntity,
 import xml.XML
 import org.apache.commons.httpclient.methods.multipart._
 import org.apache.commons.httpclient.params.HttpMethodParams
+import java.io.ByteArrayOutputStream
+import java.util.zip.GZIPOutputStream
 
 class PointUploader(serverUrl: String) {
   val httpClient = {
@@ -18,6 +20,14 @@ class PointUploader(serverUrl: String) {
 
   var loadedIds: Set[Date] = Set()
 
+  private def gzippedContent(point: PointSource): Array[Byte] = {
+    val outputStream = new ByteArrayOutputStream()
+    val gZIPOutputStream = new GZIPOutputStream(outputStream)
+    gZIPOutputStream.write(point.content())
+    gZIPOutputStream.close()
+    outputStream.toByteArray
+  }
+
   def uploadPoint(point: PointSource) = {
     if (!loadedIds.contains(point.coordinate.time)) {
       val method = new PostMethod(serverUrl + "/upload-point")
@@ -25,7 +35,7 @@ class PointUploader(serverUrl: String) {
       method.setRequestHeader("expName", point.expName)
       val fileName = point.coordinate.time.toString
       val entity = new MultipartRequestEntity(Array(
-        new FilePart(fileName, new ByteArrayPartSource(fileName, point.content()))
+        new FilePart(fileName, new ByteArrayPartSource(fileName, gzippedContent(point)))
       ),  new HttpMethodParams())
       method.setRequestEntity(entity)
       val isOk = httpClient.executeMethod(method).ensuring(r => r == 200 || r == 409) == 200

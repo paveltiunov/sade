@@ -1,9 +1,12 @@
 package org.sade.model
 
-import java.sql.{Timestamp}
 import org.squeryl.{PrimitiveTypeMode, KeyedEntity, Schema}
 import org.sade.starcoords.{SkyMapPoint, MeasuredPointCoordinates, Directions}
-
+import org.apache.commons.io.output.ByteArrayOutputStream
+import java.sql.{Timestamp}
+import annotation.tailrec
+import java.util.zip.GZIPInputStream
+import java.io.{DataInputStream, ByteArrayInputStream}
 
 object SadeDB extends Schema with PrimitiveTypeMode {
   val points = table[Point]()
@@ -47,7 +50,28 @@ case class Point(
     direction
   )
 
-  def content = SadeDB.contentByPoint(this).content
+  def content = {
+    val content = SadeDB.contentByPoint(this).content
+    val inputStream = new ByteArrayInputStream(content)
+    if ((inputStream.read() | inputStream.read() << 8) == GZIPInputStream.GZIP_MAGIC)
+      ungzipContent(content)
+    else content
+  }
+
+  private def ungzipContent(content: Array[Byte]) = {
+    val inputStream = new GZIPInputStream(new ByteArrayInputStream(content))
+    val outputStream = new ByteArrayOutputStream()
+    val buffer = Array.ofDim[Byte](8192)
+    @tailrec def readStream() {
+      val read = inputStream.read(buffer)
+      if (read > 0) {
+        outputStream.write(buffer, 0, read)
+        readStream()
+      }
+    }
+    readStream()
+    outputStream.toByteArray
+  }
 }
 
 case class PointContent(id: Timestamp, content: Array[Byte]) extends KeyedEntity[Timestamp]
