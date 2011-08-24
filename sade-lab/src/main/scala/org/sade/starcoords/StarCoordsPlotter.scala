@@ -53,17 +53,31 @@ case class StarCoordsPainter(points: Seq[SkyMapPoint], viewMode: ViewMode, width
     normalized.map(p => NormalizedColorPoint(NormalizedPoint(p._1._1, p._1._2), p._2)).foreach(drawColorPoint(g))
   }
 
-  private def planePlot(g: Graphics2D) {
+  def planeNormalizedColorPoints = {
     val normalized = normalize(points.map(_.rotationAngle)) zip normalize(points.map(_.time.getTime.toDouble)) zip normalize(points.map(_.value))
-    plotNormalized(normalized, g)
+    normalized.map(p => NormalizedColorPoint(NormalizedPoint(p._1._1, p._1._2), p._2))
   }
 
-  def galacticPlot(g: Graphics2D) {
+  private def planePlot(g: Graphics2D) {
+    planeNormalizedColorPoints.foreach(drawColorPoint(g))
+  }
+
+  def galacticPointHolders = {
     val galacticCoords = points.map(p => (p.standCoordinate, p.value)).map(c => (StarCoordsConverter.toGalacticCoordinates(FullStandCoordinate(c._1, LabCoordinates(37.686, 55.765, 135))), c._2))
     val projected = galacticCoords.map(c => (MollweideProjection.project(c._1.l, c._1.b), c._2)).map(p => NormalizedColorPoint(NormalizedPoint(p._1._1, p._1._2), p._2))
     val projectedCmbr = cmbrPoints.map(MollweideProjection.project).map(p => NormalizedCMBR(NormalizedPoint(p._1, p._2)))
-    val normalizedPointHolders = normalizePointHolders(projected ++ projectedCmbr)
-    val projectedAndNormalized = normalizeNormalizables(normalizedPointHolders.collect {case cp: NormalizedColorPoint => cp})
+    normalizePointHolders(projected ++ projectedCmbr)
+  }
+
+  def galacticProjectedAndNormalized(normalizedPointHolders: Seq[_]): Seq[NormalizedColorPoint] = {
+    normalizeNormalizables(normalizedPointHolders.collect {
+      case cp: NormalizedColorPoint => cp
+    })
+  }
+
+  def galacticPlot(g: Graphics2D) {
+    val normalizedPointHolders = galacticPointHolders
+    val projectedAndNormalized = galacticProjectedAndNormalized(normalizedPointHolders)
     projectedAndNormalized.foreach(drawColorPoint(g))
     normalizedPointHolders.collect {case p: NormalizedCMBR => p}.foreach(drawCMBRPoint(g))
   }
@@ -106,9 +120,9 @@ case class NormalizedPoint(x: Double, y: Double) extends Normalizable[Normalized
 case class NormalizedColorPoint(point: NormalizedPoint, color: Double) extends PointHolder[NormalizedColorPoint] with Normalizable[NormalizedColorPoint]{
   def normalize(min: NormalizedColorPoint, max: NormalizedColorPoint) = copy(color = normalizeDouble(min.color, max.color, color))
 
-  def max(point: NormalizedColorPoint) = copy(color = math.min(color, point.color))
+  def max(point: NormalizedColorPoint) = copy(color = math.max(color, point.color))
 
-  def min(point: NormalizedColorPoint) = copy(color = math.max(color, point.color))
+  def min(point: NormalizedColorPoint) = copy(color = math.min(color, point.color))
 
   def normalizePoint(point: NormalizedPoint) = copy(point = point)
 }
