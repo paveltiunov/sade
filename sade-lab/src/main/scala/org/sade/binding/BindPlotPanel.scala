@@ -10,3 +10,14 @@ abstract class BindPlotPanel[T](bindField: BindField[T]) extends PlotPanel {
 
   def updatePlots(value: T)
 }
+
+abstract class BindTriggerPlotPanel(triggerFields: BindField[_]*) extends PlotPanel {
+  val updatePlotFun = {
+    v: Option[_] =>
+      removeAll()
+      v.foreach(x => updatePlots())
+  }
+  triggerFields.foreach(_ += updatePlotFun)
+
+  def updatePlots()
+}
