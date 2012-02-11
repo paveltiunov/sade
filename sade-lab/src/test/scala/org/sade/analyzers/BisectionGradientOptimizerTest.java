@@ -19,5 +19,9 @@ public class BisectionGradientOptimizerTest {
         public double[] Gradient(double[] at) {
             return new double[]{Math.cos(at[0])};
         }
+
+        public double Value(double[] at) {
+            return Math.sin(at[0]);
+        }
     }
 }

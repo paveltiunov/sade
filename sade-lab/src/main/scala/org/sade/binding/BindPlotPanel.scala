@@ -1,6 +1,6 @@
 package org.sade.binding
 
-import org.sade.lab.plot.PlotPanel
+import org.sade.lab.plot.{Plot3DPanel, PlotPanelMethods, PlotPanel}
 
 abstract class BindPlotPanel[T](bindField: BindField[T]) extends PlotPanel {
   bindField += {v =>
@@ -11,13 +11,20 @@ abstract class BindPlotPanel[T](bindField: BindField[T]) extends PlotPanel {
   def updatePlots(value: T)
 }
 
-abstract class BindTriggerPlotPanel(triggerFields: BindField[_]*) extends PlotPanel {
-  val updatePlotFun = {
-    v: Option[_] =>
+trait BindTriggerPlotPanel {
+  self : PlotPanelMethods =>
+
+  def triggerFields: Seq[BindField[_]]
+
+  def updatePlotFun(v: Option[_]) {
       removeAll()
       v.foreach(x => updatePlots())
   }
+
   triggerFields.foreach(_ += updatePlotFun)
 
   def updatePlots()
 }
+
+abstract class BindTriggerPlot2DPanel(val triggerFields: BindField[_]*) extends PlotPanel with BindTriggerPlotPanel
+abstract class BindTriggerPlot3DPanel(val triggerFields: BindField[_]*) extends Plot3DPanel with BindTriggerPlotPanel

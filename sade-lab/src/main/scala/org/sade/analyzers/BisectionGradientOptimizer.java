@@ -1,18 +1,25 @@
 package org.sade.analyzers;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class BisectionGradientOptimizer implements GradientOptimizer
 {
     private final double precision;
     private final GradientFunction function;
     private final double[] searchRange;
+    private final List<double[]> trackValueCollection;
 
-    public BisectionGradientOptimizer(double precision, GradientFunction function, double[] searchRange)
+    public BisectionGradientOptimizer(double precision, GradientFunction function, double[] searchRange) {
+        this(precision, function, searchRange, null);
+    }
+
+    public BisectionGradientOptimizer(double precision, GradientFunction function, double[] searchRange, List<double[]> trackValueCollection)
     {
         this.precision = precision;
         this.function = function;
         this.searchRange = searchRange;
+        this.trackValueCollection = trackValueCollection;
     }
 
     public double[] Optimize(double[] initial)
@@ -29,6 +36,7 @@ public class BisectionGradientOptimizer implements GradientOptimizer
                 for (int c = 0; c < 16; c++)
                 {
                     double[] centerGradient = function.Gradient(initial);
+                    if (trackValueCollection != null) trackValueCollection.add(initial.clone());
                     if (HasConverged(centerGradient)) return initial;
                     if (divisions[i].HasConverged(precision)) break;
                     Division division = divisions[i].GetNext(initial, centerGradient);
@@ -48,6 +56,10 @@ public class BisectionGradientOptimizer implements GradientOptimizer
 
     private boolean HasConverged(double[] centerGradient)
     {
+        return hasConverged(centerGradient, precision);
+    }
+
+    public static boolean hasConverged(double[] centerGradient, double precision) {
         double sum = 0.0;
         for (int i = 0; i < centerGradient.length; i++)
         {

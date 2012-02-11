@@ -11,7 +11,7 @@ public class JacobiAngerAnalyzer
 {
     private AnalyzeResult lastAnalyzeResult;
     private double[] previousSamples;
-    private final double Precision = 1E-4;
+    public static final double Precision = 1E-4;
     private final int MaxIterations = 2000;
     private final int FourierCoeffCount = 8;
     private final int omegaSlices = 3;
@@ -26,10 +26,7 @@ public class JacobiAngerAnalyzer
     {
         Complex[] firstCoeff = GetFirstCoefficients(ReScale(sample));
         MinimizeResult result = new MinimizeResult(0, minimizeParameters);
-        for (int i = 4; i <= firstCoeff.length; i*=2)
-        {
-            result = MinimizeErrorFunction(result.getParameters(), Arrays.copyOf(firstCoeff, i));
-        }
+        result = MinimizeErrorFunction(result.getParameters(), Arrays.copyOf(firstCoeff, FourierCoeffCount));
         return result;
     }
 
@@ -61,7 +58,7 @@ public class JacobiAngerAnalyzer
     private MinimizeResult MinimizeErrorFunction(MinimizeParameters initialParams, Complex[] fourierCoefficients)
     {
         JacobiAngerErrorFuncDiffEvaluator gradientFunction = new JacobiAngerErrorFuncDiffEvaluator(fourierCoefficients);
-        BisectionGradientOptimizer descentOptimizer = new BisectionGradientOptimizer(Precision, gradientFunction, new MinimizeParameters(1.5,Math.PI/2,Math.PI/2).Wrap());
+        GradientOptimizer descentOptimizer = new FastestGradientDescentOptimizer(Precision, gradientFunction);
 
         double[] result = descentOptimizer.Optimize(initialParams.Wrap());
         double error = gradientFunction.Value(result);
