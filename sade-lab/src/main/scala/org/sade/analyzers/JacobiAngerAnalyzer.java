@@ -14,8 +14,9 @@ public class JacobiAngerAnalyzer
     public static final double Precision = 1E-4;
     private final int MaxIterations = 2000;
     private final int FourierCoeffCount = 8;
-    private final int omegaSlices = 3;
-    private final int phaseSlices = 6;
+    private static final int omegaSlices = 3;
+    private static final int phaseSlices = 4;
+    private final List<MinimizeParameters> scanParameters = scanParameters();
 
     public MinimizeResult AnalyzeSample(double[] sample, double omega, double delta, double phi)
     {
@@ -183,23 +184,31 @@ public class JacobiAngerAnalyzer
         searchPeriod = SearchPeriod(sample, (int)Math.round(searchPeriod * 0.95), (int)Math.round(searchPeriod * 1.05));
         return searchPeriod;
     }
-
-    private MinimizeResult ScanForEntryParameters(double[] sampleToAnalyze)
-    {
-        List<MinimizeResult> results = new ArrayList<MinimizeResult>();
-        for (int i = 0; i < phaseSlices; i++)
+    
+    public static List<MinimizeParameters> scanParameters() {
+        ArrayList<MinimizeParameters> params = new ArrayList<MinimizeParameters>();
+        for (int i = 0; i < phaseSlices / 2 + 1; i++)
         {
             for (int j = 0; j < phaseSlices; j++)
             {
                 for (int k = 0; k < omegaSlices; k++)
                 {
-                    MinimizeResult minimizeResult = AnalyzeSample(sampleToAnalyze,
-                                                       new MinimizeParameters(2 + k*1.0/omegaSlices, Math.PI/phaseSlices*i, 2*Math.PI/phaseSlices*j));
-                    double delta = minimizeResult.getParameters().getDelta();
-                    if (delta > Math.PI || delta < 0.0) continue;
-                    results.add(minimizeResult);
+                    MinimizeParameters minimizeParameters = new MinimizeParameters(2 + k * 1.0 / omegaSlices, Math.PI / phaseSlices * i * 2, 2 * Math.PI / phaseSlices * j);
+                    params.add(minimizeParameters);
                 }
             }
+        }
+        return params;
+    }
+
+    private MinimizeResult ScanForEntryParameters(double[] sampleToAnalyze)
+    {
+        List<MinimizeResult> results = new ArrayList<MinimizeResult>();
+        for (MinimizeParameters minimizeParameters : scanParameters) {
+            MinimizeResult minimizeResult = AnalyzeSample(sampleToAnalyze, minimizeParameters);
+            double delta = minimizeResult.getParameters().getDelta();
+            if (delta > Math.PI || delta < 0.0) continue;
+            results.add(minimizeResult);
         }
         double min = results.get(0).getError();
         MinimizeResult minResult = null;

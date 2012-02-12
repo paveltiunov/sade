@@ -6,8 +6,16 @@ import org.math.plot.{Plot3DPanel => MPlot3DPanel}
 class Plot3DPanel extends Component with PlotPanelMethods {
   override lazy val peer = new MPlot3DPanel with SuperMixin
 
+  def pointTripleArray(points: Seq[(Double, Double, Double)]): Array[Array[Double]] = {
+    points.map(p => Array(p._1, p._2, p._3)).toArray
+  }
+
   def addLinePlot(name: String, points: Seq[(Double, Double, Double)]) {
-    peer.addLinePlot(name, points.map(p => Array(p._1, p._2, p._3)).toArray)
+    peer.addLinePlot(name, pointTripleArray(points))
+  }
+
+  def addScatterPlot(name: String, points: Seq[(Double, Double, Double)]) {
+    peer.addScatterPlot(name, pointTripleArray(points))
   }
 
   def addGridPlot(name: String, pointsFun: (Int, Int) => (Double, Double, Double), pointsCount: Int) {

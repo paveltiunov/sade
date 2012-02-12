@@ -1,7 +1,7 @@
 package org.sade.lab
 
 import org.sade.analyzers.math.FFT
-import plot.PlotPanel
+import plot.{Plot3DPanel, PlotPanel}
 import swing._
 import swing.TabbedPane.Page
 import org.sade.binding.{BindTriggerPlot3DPanel, BindTriggerPlot2DPanel, BindField, BindDecimalField}
@@ -81,12 +81,16 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
                 val pointCount3D = 50
                 setAxisLabels(v1.label, v2.label, "S")
                 addGridPlot(label, errorValue3DPlot(v1, v2, pointCount3D), pointCount3D)
+                addScatterPlot("Scan params", scanParametersForErrorPlot(v1, v2))
               }
             })
           }
         }
         pages += new Page("Easy optimize", optimizerComparisonPlotPanel(new MinimizeParameters(2.9, 0.3, 0.5)))
         pages += new Page("Hard optimize", optimizerComparisonPlotPanel(new MinimizeParameters(2.5, 1.5, 1.5)))
+        pages += new Page("Scan parameters", new Plot3DPanel {
+          addScatterPlot("Scan params", scanParametersSpherical)
+        })
       }, BorderPanel.Position.Center)
     }
   }
@@ -113,6 +117,8 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
     def fromOrDefault = from.valueOption.getOrElse(default)
 
     def label: String
+    
+    def valueIn(params: MinimizeParameters): Double
   }
 
   object Omega extends Var {
@@ -123,6 +129,8 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
     def default = omegaDefault
 
     def label = "Omega"
+
+    def valueIn(params: MinimizeParameters) = params.getOmega
   }
 
   object Phi extends Var {
@@ -133,6 +141,8 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
     def default = phiDefault
 
     def label = "Phi"
+
+    def valueIn(params: MinimizeParameters) = params.getPhi
   }
 
   object Delta extends Var {
@@ -143,6 +153,8 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
     def default = deltaDefault
 
     def label = "Delta"
+
+    def valueIn(params: MinimizeParameters) = params.getDelta
   }
 
 
@@ -177,6 +189,12 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
       (valueX, valueY, evaluator.Value(new MinimizeParameters(resultValueMap(Omega), resultValueMap(Delta), resultValueMap(Phi)).Wrap()))
   }
   
+  def scanParametersForErrorPlot(trackVarX: Var, trackVarY: Var) = {
+    JacobiAngerAnalyzer.scanParameters().map(p =>
+      (trackVarX.valueIn(p), trackVarY.valueIn(p), evaluator.Value(p.Wrap()))
+    )  
+  }
+  
   def bisectionOptimizerTrackError(initialParams: MinimizeParameters) = {
     val trackCollectionValue = new ArrayList[Array[Double]]()
     val optimizer = new BisectionGradientOptimizer(JacobiAngerAnalyzer.Precision, evaluator, new MinimizeParameters(1.5, math.Pi / 2, math.Pi / 2).Wrap, trackCollectionValue)
@@ -187,5 +205,13 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
   def gradientDescentTrackError(initialParams: MinimizeParameters, optimizer: DescentOptimizer) = {
     val result = optimizer.Optimize(initialParams.Wrap())
     (optimizer.trackValueBuffer.map(evaluator.Value).toArray, result)
+  }
+
+  def scanParametersSpherical = {
+    JacobiAngerAnalyzer.scanParameters().map(p => (
+      p.getOmega * math.sin(p.getDelta) * math.cos(p.getPhi),
+      p.getOmega * math.sin(p.getDelta) * math.sin(p.getPhi),
+      p.getOmega * math.cos(p.getDelta)
+    ))
   }
 }
