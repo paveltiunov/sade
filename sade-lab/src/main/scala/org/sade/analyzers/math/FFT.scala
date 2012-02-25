@@ -4,14 +4,15 @@ import scala.math._
 import org.apache.commons.math.complex.Complex
 
 object FFT extends ComplexHelpers {
-  def transform(values: Array[Double], seriesNum:Int) = (0 until seriesNum).map(evaluateKHarmonic(values)).toArray
+  def transform(values: Array[Double], seriesNum:Int) = transformComplex(values.map(v => new Complex(v, 0)), seriesNum)
+  def transformComplex(values: Array[Complex], seriesNum:Int) = (0 until seriesNum).map(evaluateKHarmonic(values)).toArray
 
-  private def evaluateKHarmonic(values: Array[Double])(k: Int) =
+  private def evaluateKHarmonic(values: Array[Complex])(k: Int) =
     divideAndEvaluate(k, Array(values), Array(new Complex(1,0)))(0) / values.length
 
-  private def divideAndEvaluate(k: Int, values:Array[Array[Double]], exps: Array[Complex]): Array[Complex] = {
+  private def divideAndEvaluate(k: Int, values:Array[Array[Complex]], exps: Array[Complex]): Array[Complex] = {
     val nearestDivider = exps.length;
-    if (values(0).length == 1) values.map(v => new Complex(v(0), 0))
+    if (values(0).length == 1) values.map(v => v(0))
     else {
       val nextExps = getNextExps(k, values(0).length/nearestDivider);
       val nextValues = values.flatMap(v => (0 until nearestDivider).map(dividedArray(nearestDivider, _, v)))
@@ -27,7 +28,7 @@ object FFT extends ComplexHelpers {
     (0 until nearestDivider).map(i => new Complex(0, -Pi*2*i*k/length).exp).toArray
   }
 
-  private def dividedArray(divider:Int, i: Int, values:Array[Double]) = {
+  private def dividedArray(divider:Int, i: Int, values:Array[Complex]) = {
     val n = values.length/divider
     (0 until n).map(j => values(j*divider + i)).toArray
   }

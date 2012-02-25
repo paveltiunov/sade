@@ -14,7 +14,7 @@ public class JacobiAngerAnalyzer
     public static final double Precision = 1E-4;
     private final int MaxIterations = 2000;
     private final int FourierCoeffCount = 8;
-    private static final int omegaSlices = 3;
+    private static final int omegaSlices = 4;
     private static final int phaseSlices = 4;
     private final List<MinimizeParameters> scanParameters = scanParameters();
 
@@ -31,7 +31,7 @@ public class JacobiAngerAnalyzer
         return result;
     }
 
-    private double[] ReScale(double[] sample)
+    public static double[] ReScale(double[] sample)
     {
         double min = sample[0];
         for (double v : sample) {
@@ -129,7 +129,7 @@ public class JacobiAngerAnalyzer
     }
 
     private boolean isOverErrorThreshold(AnalyzeResult analyzeResult) {
-        return analyzeResult.getMinimizeError() > 0.1;
+        return analyzeResult.getMinimizeError() > 0.2;
     }
 
     private AnalyzeResult analyzeNextByPrevious(double[] sampleToAnalyze, float realPeriod) {
@@ -175,7 +175,7 @@ public class JacobiAngerAnalyzer
         return dest;
     }
 
-    private int ScanPeriod(double[] sample)
+    public static int ScanPeriod(double[] sample)
     {
         int log = (int)Math.pow(2, Math.floor(Math.log(sample.length) / Math.log(2)));
         double frequency = FrequencyEvaluator.evaluateFrequency(take(sample, log));
@@ -193,7 +193,7 @@ public class JacobiAngerAnalyzer
             {
                 for (int k = 0; k < omegaSlices; k++)
                 {
-                    MinimizeParameters minimizeParameters = new MinimizeParameters(2 + k * 1.0 / omegaSlices, Math.PI / phaseSlices * i * 2, 2 * Math.PI / phaseSlices * j);
+                    MinimizeParameters minimizeParameters = new MinimizeParameters(2 + k * 1.0 / (omegaSlices - 1), 2 * Math.PI / phaseSlices * i, 2 * Math.PI / phaseSlices * j);
                     params.add(minimizeParameters);
                 }
             }
@@ -207,7 +207,8 @@ public class JacobiAngerAnalyzer
         for (MinimizeParameters minimizeParameters : scanParameters) {
             MinimizeResult minimizeResult = AnalyzeSample(sampleToAnalyze, minimizeParameters);
             double delta = minimizeResult.getParameters().getDelta();
-            if (delta > Math.PI || delta < 0.0) continue;
+            double omega = minimizeResult.getParameters().getOmega();
+            if (delta > Math.PI || delta < 0.0 || omega < 2.0) continue;
             results.add(minimizeResult);
         }
         double min = results.get(0).getError();
@@ -219,7 +220,7 @@ public class JacobiAngerAnalyzer
         return minResult;
     }
 
-    private int SearchPeriod(double[] sample, int from, int to)
+    private static int SearchPeriod(double[] sample, int from, int to)
     {
         List<Point> dotProducts = new ArrayList<Point>();
         double[] twoPeriods = take(sample, to * 2);

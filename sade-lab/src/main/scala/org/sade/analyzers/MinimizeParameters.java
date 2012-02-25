@@ -26,4 +26,9 @@ public class MinimizeParameters {
     public double getPhi() {
         return phi;
     }
+
+    @Override
+    public String toString() {
+        return "omega: " + omega + ", delta: " + delta + ", phi: " + phi;
+    }
 }

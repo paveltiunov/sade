@@ -16,4 +16,9 @@ public class MinimizeResult {
     public MinimizeParameters getParameters() {
         return parameters;
     }
+
+    @Override
+    public String toString() {
+        return parameters.toString() + ", error: " + error;
+    }
 }
