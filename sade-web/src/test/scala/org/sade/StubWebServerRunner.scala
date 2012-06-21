@@ -19,7 +19,7 @@ trait StubWebServerRunner extends PrimitiveTypeMode {
 
   @Before
   def startJetty() {
-    WorkerInitServlet.inTest = true
+    WorkerInitServlet.disableWorker = true
     StubWebRunner.prepareJettyAndStart()
     session.connection.setAutoCommit(false)
     session.bindToCurrentThread
