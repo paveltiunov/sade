@@ -37,7 +37,6 @@
             <a class="brand" href="#">
                 <span>S</span>pace <span>A</span>nisotropy <span>D</span>etection <span>E</span>xperiment
             </a>
-            <div class="btn-group pull-right">Laboratory Of Moving Media Optics. Bauman Moscow State Technical University.</div>
 
 
             <div class="nav-collapse">
@@ -51,6 +50,7 @@
 
 <!-- 2 columns (Content and Sidebar) -->
 <div class="container-fluid">
+    <lift:bind name="title"/>
     <div class="row-fluid">
         <div class="span9">
            <lift:bind name="content" />
@@ -62,7 +62,7 @@
     </div> <!-- /main -->
     <hr/>
     <footer>
-        <p>&copy;&nbsp;2012 <a href="#">SADE</a></p>
+        <p>&copy;&nbsp;2012 <a href="#">SADE</a> <div class="pull-right">Laboratory Of Moving Media Optics. Bauman Moscow State Technical University.</div>        </p>
     </footer> <!-- /footer -->
 </div> <!-- /cols -->
 

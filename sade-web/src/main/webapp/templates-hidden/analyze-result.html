@@ -1,13 +1,19 @@
 <div>
-    <h2>Analyze results</h2>
-
-    <p>
-        <div class="container-fluid">
-            <div class="row-fluid">
-                <img id="result-image"/>
-            </div>
+    <lift:bind-at name="title">
+        <div class="page-header">
+            <h2>Analyze results <small id="exp-name"></small></h2>
         </div>
-        <lift:bind-at name="sidebar">
+    </lift:bind-at>
+
+    <h3>Point map</h3>
+    <p>
+        <div class="thumbnail">
+            <img id="result-image"/>
+        </div>
+    </p>
+    <lift:bind-at name="sidebar">
+        <h3>Stats and Options</h3>
+        <div class="well">
             <h3>Analyzed / Total</h3>
 
             <div id="statistics"></div>
@@ -20,6 +26,6 @@
             <h3>Mean filter</h3>
 
             <div id="mean-filter-selector"></div>
-        </lift:bind-at>
-    </p>
+        </div>
+    </lift:bind-at>
 </div>

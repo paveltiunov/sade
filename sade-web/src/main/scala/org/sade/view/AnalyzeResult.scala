@@ -43,6 +43,7 @@ class AnalyzeResult extends LiftView {
     )}
     </head>
     val binding =
+      "#exp-name *" #> expName &
       "#result-image [src]" #> imageUrl &
       "#mode-selector *" #> SHtml.ajaxSelect(Seq("plane" -> "Plane", "galactic" -> "Galactic"), Full("plane"), v => {
         viewMode = v
