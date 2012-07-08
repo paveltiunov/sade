@@ -13,7 +13,7 @@ import actors.threadpool.AtomicInteger
 import concurrent.JavaConversions
 import java.util.concurrent.Executors
 import swing.FileChooser.SelectionMode
-import ui.{UploaderForm, AnalyzeForm}
+import ui.{AnalyzeDirectoryForm, UploaderForm, AnalyzeForm}
 
 object SadeLabMain extends SimpleSwingApplication with NimbusLookAndFeel {
   def top = new MainFrame {
@@ -32,6 +32,18 @@ object SadeLabMain extends SimpleSwingApplication with NimbusLookAndFeel {
         }
       }
     })
+    val analyzeDirectoryButton: Button = new Button(new Action("Analyze directory") {
+      def apply() {
+        val chooser = new FileChooser
+        chooser.fileSelectionMode = SelectionMode.DirectoriesOnly
+        chooser.showOpenDialog(analyzeDirectoryButton) match {
+          case FileChooser.Result.Approve => {
+            new AnalyzeDirectoryForm(chooser.selectedFile).open()
+          }
+          case _ =>
+        }
+      }
+    })
     val uploadExperimentDataButton: Button = new Button(new Action("Upload experiment data") {
       def apply() {
         val chooser = new FileChooser
@@ -45,7 +57,7 @@ object SadeLabMain extends SimpleSwingApplication with NimbusLookAndFeel {
       }
     })
     contents = new BoxPanel(Orientation.Vertical) {
-      contents ++= Seq(analyzeSinglePointButton, uploadExperimentDataButton)
+      contents ++= Seq(analyzeSinglePointButton, analyzeDirectoryButton, uploadExperimentDataButton)
     }
   }
 }

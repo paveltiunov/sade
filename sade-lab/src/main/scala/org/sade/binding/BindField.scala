@@ -27,4 +27,8 @@ trait BindField[T] {
   def +=(listener: Option[T] => Unit) {
     listeners = listeners :+ listener
   }
+
+  def -=(listener: Option[T] => Unit) {
+    listeners = listeners.filter(_ != listener)
+  }
 }

@@ -8,14 +8,23 @@ import scala.concurrent.ops._
 import java.io.{File, FileInputStream}
 import org.sade.binding.{BindProgressBar, BindPlotPanel, BindLabel, BindField}
 import actors.threadpool.AtomicInteger
-import concurrent.JavaConversions
-import java.util.concurrent.Executors
+import concurrent.{TaskRunners, JavaConversions}
 import org.sade.analyzers.{AnalyzeResult, SignalAnalyzer}
 
-class AnalyzeForm(file: File) extends Frame {
-  implicit val runner = JavaConversions.asTaskRunner(Executors.newSingleThreadExecutor())
+class AnalyzeForm(val file: File, killOnClose: Boolean = true) extends Frame {
+  implicit val runner = TaskRunners.threadPoolRunner
   size = new Dimension(800, 600)
   title = file.getAbsolutePath
+  private var killed = false
+
+  def kill() {
+    killed = true
+  }
+
+  override def closeOperation() {
+    super.closeOperation()
+    if (killOnClose) kill()
+  }
 
   object AnalyzerModel {
 
@@ -31,14 +40,16 @@ class AnalyzeForm(file: File) extends Frame {
   private var lastModified: Long = file.lastModified()
 
   private def checkFileChanged() {
-    spawn {
-      if (file.lastModified() > lastModified) {
-        lastModified = file.lastModified()
-        startAnalyze()
-        checkFileChanged()
-      } else {
-        Thread.sleep(1000)
-        checkFileChanged()
+    if (!killed) {
+      spawn {
+        if (file.lastModified() > lastModified) {
+          lastModified = file.lastModified()
+          startAnalyze()
+          checkFileChanged()
+        } else {
+          Thread.sleep(1000)
+          checkFileChanged()
+        }
       }
     }
   }
@@ -53,7 +64,7 @@ class AnalyzeForm(file: File) extends Frame {
   }
 
   private def startAnalyze() {
-    if (file.exists()) {
+    if (file.exists() && !killed) {
       spawn {
         val fileInputStream = new FileInputStream(file)
         try {
