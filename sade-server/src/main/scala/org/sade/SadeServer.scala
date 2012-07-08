@@ -8,7 +8,6 @@ import org.mortbay.jetty.webapp.WebAppContext
 import org.squeryl.PrimitiveTypeMode
 import org.mortbay.jetty.Server
 import org.h2.tools.{Server => HServer}
-import servlet.WorkerInitServlet
 
 object SadeServer extends Application with PrimitiveTypeMode {
   val logger = LoggerFactory.getLogger(getClass)
@@ -29,7 +28,7 @@ object SadeServer extends Application with PrimitiveTypeMode {
   def prepareJetty(jdbcUrl: Option[String], portNumber: Int, disableWorker: Boolean) = {
     prepareDataSource(jdbcUrl)
 
-    WorkerInitServlet.disableWorker = disableWorker
+    if (disableWorker) System.setProperty("disableWorker", "true")
 
     val server = new Server
     val scc = new SelectChannelConnector

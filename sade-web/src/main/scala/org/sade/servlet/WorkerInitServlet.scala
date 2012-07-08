@@ -14,5 +14,5 @@ class WorkerInitServlet extends HttpServlet {
 }
 
 object WorkerInitServlet {
-  var disableWorker: Boolean = false
+  var disableWorker: Boolean = System.getProperty("disableWorker", "false").toBoolean
 }
