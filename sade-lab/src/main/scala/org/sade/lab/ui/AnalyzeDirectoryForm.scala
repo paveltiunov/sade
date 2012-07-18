@@ -41,7 +41,7 @@ class AnalyzeDirectoryForm(directory: File) extends Frame {
     val newFiles = files -- currentFiles.keySet
     val toRemove = currentFiles.keySet -- files
     toRemove.map(currentFiles).foreach(_.kill())
-    val newFileMap = currentFiles ++ newFiles.map(f => f -> new AnalyzeForm(f, killOnClose = false)).toMap -- toRemove
+    val newFileMap = currentFiles ++ newFiles.map(f => f -> new AnalyzeForm(f, killOnClose = false, defaultRunner = Some(TaskRunners.threadPoolRunner))).toMap -- toRemove
     filesInDir.set(newFileMap)
   }
 

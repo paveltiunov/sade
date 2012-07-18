@@ -8,11 +8,12 @@ import scala.concurrent.ops._
 import java.io.{File, FileInputStream}
 import org.sade.binding.{BindProgressBar, BindPlotPanel, BindLabel, BindField}
 import actors.threadpool.AtomicInteger
-import concurrent.{TaskRunners, JavaConversions}
+import concurrent.{FutureTaskRunner, TaskRunners, JavaConversions}
 import org.sade.analyzers.{AnalyzeResult, SignalAnalyzer}
+import java.util.concurrent.Executors
 
-class AnalyzeForm(val file: File, killOnClose: Boolean = true) extends Frame {
-  implicit val runner = TaskRunners.threadPoolRunner
+class AnalyzeForm(val file: File, killOnClose: Boolean = true, defaultRunner: Option[FutureTaskRunner] = None) extends Frame {
+  implicit val runner = defaultRunner.getOrElse(JavaConversions.asTaskRunner(Executors.newSingleThreadExecutor()))
   size = new Dimension(800, 600)
   title = file.getAbsolutePath
   private var killed = false
