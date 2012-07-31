@@ -25,6 +25,19 @@ object SadeDB extends Schema with PrimitiveTypeMode {
     case (content, result) => SkyMapPoint(content.coordinates, 0, result.meanValue)
   }
 
+  def dropPoint(id: Timestamp) {
+    inTransaction {
+      analyzeTokens.deleteWhere(_.id === id)
+      analyzeResults.deleteWhere(_.id === id)
+      pointContents.deleteWhere(_.id === id)
+      points.deleteWhere(_.id === id)
+    }
+  }
+
+  def analyzeResultAndTokenStatus(expName: String): Iterable[(Point, Option[AnalyzeResult], Option[AnalyzeToken])] = join(points, analyzeResults.leftOuter, analyzeTokens.leftOuter) ((content, result, token) => {
+    where(content.expName === expName) select ((content, result, token)) on(content.id === result.get.id, token.get.id === content.id)
+  })
+
   def experiments = from(points) (p => groupBy(p.expName)).map(_.key)
 
   def pointCount(expName: String) = from(points) (p => where(p.expName === expName) compute(count(p.id))).head.measures
