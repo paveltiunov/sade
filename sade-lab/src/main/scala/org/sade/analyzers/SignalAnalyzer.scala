@@ -11,7 +11,7 @@ class SignalAnalyzer(inputStream: InputStream, statusListener: Option[Float => U
   val analyzeResults = estimateParameters.toArray
 
   def foundDeltaStream: Array[Double] = {
-    analyzeResults.map(_.getParameters.getDelta).toArray
+    analyzeResults.filterNot(JacobiAngerAnalyzer.isOverErrorThreshold).map(_.getParameters.getDelta).toArray
   }
 
   private def estimateParameters = {

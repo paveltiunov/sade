@@ -61,6 +61,8 @@ class Boot extends PrimitiveTypeMode {
       case Req("upload-point" :: Nil, _, _) => false
     }
 
+    LiftRules.stdRequestTimeout = Box(300)
+
     LiftRules.dispatch.prepend {
       case Req("loaded-point-ids" :: Nil, _, _) => new AllPointIdView().dispatch _
     }

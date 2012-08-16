@@ -94,6 +94,7 @@ public class JacobiAngerAnalyzer
             }
             else
             {
+                searchPeriod = searchPeriodInInterval(sample, searchPeriod);
                 AnalyzeResult analyzeResult = analyzeNextByPrevious(sampleToAnalyze, searchPeriod);
                 if (isOverErrorThreshold(analyzeResult)) {
                     searchPeriod = analyzeWithOversample(take(sample, sizeForSearchPeriod(searchPeriod, searchPeriodCoeff)), searchPeriodCoeff, sampleToAnalyze, 2);
@@ -105,6 +106,10 @@ public class JacobiAngerAnalyzer
         }
         previousSamples = sample;
         return analyzeResults;
+    }
+
+    private static int searchPeriodInInterval(double[] sample, int searchPeriod) {
+        return SearchPeriod(sample, (int)Math.round(searchPeriod * 0.95), (int)Math.round(searchPeriod * 1.05));
     }
 
     private int sizeForSearchPeriod(int searchPeriod, double searchPeriodCoeff) {
@@ -128,7 +133,7 @@ public class JacobiAngerAnalyzer
         return lastAnalyzeResult.getPeriod();
     }
 
-    private boolean isOverErrorThreshold(AnalyzeResult analyzeResult) {
+    public static boolean isOverErrorThreshold(AnalyzeResult analyzeResult) {
         return analyzeResult.getMinimizeError() > 0.2;
     }
 
@@ -181,7 +186,7 @@ public class JacobiAngerAnalyzer
         double frequency = FrequencyEvaluator.evaluateFrequency(take(sample, log));
         double period = 1/frequency;
         int searchPeriod = (int) period;
-        searchPeriod = SearchPeriod(sample, (int)Math.round(searchPeriod * 0.95), (int)Math.round(searchPeriod * 1.05));
+        searchPeriod = searchPeriodInInterval(sample, searchPeriod);
         return searchPeriod;
     }
     
@@ -222,30 +227,21 @@ public class JacobiAngerAnalyzer
 
     private static int SearchPeriod(double[] sample, int from, int to)
     {
-        List<Point> dotProducts = new ArrayList<Point>();
-        double[] twoPeriods = take(sample, to * 2);
-        for (int i = from; i < to+1; i++)
-        {
-            double xx = 0.0;
-            double yy = 0.0;
-            double xy = 0.0;
-            for (int j = 0; j < i; j++)
-            {
-                double x = twoPeriods[j];
-                double y = twoPeriods[i+j];
-                xx += x*x;
-                yy += y*y;
-                xy += x*y;
-            }
-            dotProducts.add(new Point(i, xy / (Math.sqrt(xx) * Math.sqrt(yy))));
+        double[] twoPeriods = take(sample, from * 2);
+        Complex[] first = FFT.transform(take(twoPeriods, from), 2);
+        Complex[] second = FFT.transform(skip(twoPeriods, from), 2);
+        double phaseDiff = first[1].getArgument() - second[1].getArgument();
+        int period = (int) (from + Math.round((phaseDiff / (2 * Math.PI)) * from));
+        if (period >= from && period <= to) {
+            int center = Math.round((from + to) / 2.0f);
+            int periodDiff = Math.abs(center - period);
+            if (center - periodDiff == from && center + periodDiff == to)
+                return period;
+            else
+                return SearchPeriod(sample, center - periodDiff, center + periodDiff);
+        } else {
+            return Math.min(Math.max(period, from), to);
         }
-        double max = dotProducts.get(0).value;
-        int maxI = dotProducts.get(0).i;
-        for (Point point : dotProducts) {
-            max = Math.max(max, point.value);
-            if (max == point.value) maxI = point.i;
-        }
-        return maxI;
     }
 
 }
