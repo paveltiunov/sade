@@ -231,6 +231,8 @@ public class JacobiAngerAnalyzer
         Complex[] first = FFT.transform(take(twoPeriods, from), 2);
         Complex[] second = FFT.transform(skip(twoPeriods, from), 2);
         double phaseDiff = first[1].getArgument() - second[1].getArgument();
+        phaseDiff = (Math.abs(phaseDiff) % (Math.PI * 2)) * Math.signum(phaseDiff);
+        if (phaseDiff < -Math.PI) phaseDiff += Math.PI * 2;
         int period = (int) (from + Math.round((phaseDiff / (2 * Math.PI)) * from));
         if (period >= from && period <= to) {
             int center = Math.round((from + to) / 2.0f);
