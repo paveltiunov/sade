@@ -8,9 +8,9 @@ object FFT extends ComplexHelpers {
   def transformComplex(values: Array[Complex], seriesNum:Int) = (0 until seriesNum).map(evaluateKHarmonic(values)).toArray
 
   private def evaluateKHarmonic(values: Array[Complex])(k: Int) =
-    divideAndEvaluate(k, Array(values), Array(new Complex(1,0)))(0) / values.length
+    divideAndEvaluate(k, Array(DividedArray(values, 1, 0)), Array(new Complex(1,0)))(0) / values.length
 
-  private def divideAndEvaluate(k: Int, values:Array[Array[Complex]], exps: Array[Complex]): Array[Complex] = {
+  private def divideAndEvaluate(k: Int, values:Array[DividedArray], exps: Array[Complex]): Array[Complex] = {
     val nearestDivider = exps.length;
     if (values(0).length == 1) values.map(v => v(0))
     else {
@@ -28,9 +28,18 @@ object FFT extends ComplexHelpers {
     (0 until nearestDivider).map(i => new Complex(0, -Pi*2*i*k/length).exp).toArray
   }
 
-  private def dividedArray(divider:Int, i: Int, values:Array[Complex]) = {
-    val n = values.length/divider
-    (0 until n).map(j => values(j*divider + i)).toArray
+  private def dividedArray(divider:Int, i: Int, values:DividedArray) = {
+    values.divide(divider, i)
+  }
+
+  case class DividedArray(src: Array[Complex], divider: Int, i: Int) {
+    def apply(j: Int) = src(j*divider + i)
+
+    def length = src.length / divider
+
+    def divide(nextDivider: Int, nextI: Int) = {
+      copy(divider = nextDivider * divider, i = nextI * divider + i)
+    }
   }
 
   private def findNearestDividerOf(n:Int) = {
