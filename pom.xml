@@ -8,7 +8,7 @@
     <name>sade</name>
     <groupId>org.sade</groupId>
     <artifactId>sade</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
 
     <dependencyManagement>
         <dependencies>
@@ -102,6 +102,18 @@
             <url>http://sia2010.googlecode.com/svn/trunk/sia/lib/</url>
         </repository>
     </repositories>
+
+    <scm>
+        <connection>scm:git:git://git@github.com:paveltiunov/sade.git</connection>
+    </scm>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <pluginRepositories>
         <pluginRepository>
