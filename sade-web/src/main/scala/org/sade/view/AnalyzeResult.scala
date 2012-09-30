@@ -12,6 +12,7 @@ import org.sade.model.{AnalyzeToken, Point, SadeDB}
 import org.sade.view.AnalyzeResultImageView
 import net.liftweb.http.{LiftView, TemplateFinder, SHtml}
 import org.sade.starcoords.SkyMapPoint
+import java.sql.Timestamp
 
 class AnalyzeResult extends LiftView {
   def dispatch = {
@@ -77,11 +78,35 @@ class DataModes(expName: String) {
   }
 
   case object TableMode extends DataMode {
+    var selectedPointIds = Set[Timestamp]()
+
     def name = "Point table"
 
     def contentId = "pointTable"
 
-    def table: NodeSeq = TableRenderer.renderTable[(Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])](
+    def renderActions(actions: Action*) = {
+      <div class="btn-toolbar">
+        {actions.flatMap(_.render)}
+      </div>
+    }
+
+    case class Action(iconClass: String, btnClass: String, action: () => Unit) {
+      def render = <div class="btn-group">{SHtml.a(() => {
+        action()
+        tableUpdateCmd
+      }, <i class={"icon-white " + iconClass}></i>, "class" -> ("btn btn-large " + btnClass))}</div>
+    }
+
+    def table: NodeSeq =
+    renderActions(
+      Action("icon-refresh", "btn-warning", () => SadeDB.dropAnalyze(selectedPointIds)),
+      Action("icon-trash", "btn-danger", () => SadeDB.dropPoints(selectedPointIds))
+    ) ++
+      TableRenderer.renderTable[(Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])](
+      ("", {p => SHtml.ajaxCheckbox(selectedPointIds.contains(p._1.id), checked => {
+        if (checked) selectedPointIds += p._1.id else selectedPointIds -= p._1.id
+        JsCmds.Noop
+      })}),
       ("Time", {p => Text(p._1.id.toString)}),
       ("Point Index", {p => Text(p._1.pointIndex.toString)}),
       ("Dir index", {p => Text(p._1.dirIndex.toString)}),
@@ -89,11 +114,7 @@ class DataModes(expName: String) {
       ("Value", {p => Text(p._2.map(_.meanValue.toString).getOrElse(""))}),
       ("Absolute error", {p => Text(p._2.map(_.absoluteError.toString).getOrElse(""))}),
       ("Frequency", {p => Text(p._2.map(_.meanFrequency.toString).getOrElse(""))}),
-      ("Analyze started", {p => Text(p._3.map(_.analyzeStarted.toString).getOrElse(""))}),
-      ("Actions", {p => SHtml.a(() => {
-        SadeDB.dropPoint(p._1.id)
-        tableUpdateCmd
-      }, <i class="icon-trash icon-white"></i>, "class" -> "btn btn-danger")})
+      ("Analyze started", {p => Text(p._3.map(_.analyzeStarted.toString).getOrElse(""))})
     )(SadeDB.analyzeResultAndTokenStatus(expName).toSeq)
 
     def tableUpdateCmd = SetHtml(contentId, table)

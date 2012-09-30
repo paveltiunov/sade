@@ -7,6 +7,7 @@ import java.sql.{Timestamp}
 import annotation.tailrec
 import java.util.zip.GZIPInputStream
 import java.io.{DataInputStream, ByteArrayInputStream}
+import org.squeryl.dsl.ast.{RightHandSideOfIn, ConstantExpressionNodeList}
 
 object SadeDB extends Schema with PrimitiveTypeMode {
   val points = table[Point]()
@@ -25,12 +26,21 @@ object SadeDB extends Schema with PrimitiveTypeMode {
     case (content, result) => SkyMapPoint(content.coordinates, 0, result.meanValue)
   }
 
-  def dropPoint(id: Timestamp) {
+  implicit def traversableOfTimestamp2ListTimestamp(l: Traversable[Timestamp]) =
+    new RightHandSideOfIn[Timestamp](new ConstantExpressionNodeList[Timestamp](l))
+
+  def dropPoints(ids: Set[Timestamp]) {
     inTransaction {
-      analyzeTokens.deleteWhere(_.id === id)
-      analyzeResults.deleteWhere(_.id === id)
-      pointContents.deleteWhere(_.id === id)
-      points.deleteWhere(_.id === id)
+      dropAnalyze(ids)
+      pointContents.deleteWhere(_.id in (ids))
+      points.deleteWhere(_.id in (ids))
+    }
+  }
+
+  def dropAnalyze(ids: Set[Timestamp]) {
+    inTransaction {
+      analyzeTokens.deleteWhere(_.id in (ids))
+      analyzeResults.deleteWhere(_.id in (ids))
     }
   }
 
