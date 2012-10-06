@@ -98,24 +98,48 @@ class DataModes(expName: String) {
     }
 
     def table: NodeSeq =
-    renderActions(
-      Action("icon-refresh", "btn-warning", () => SadeDB.dropAnalyze(selectedPointIds)),
-      Action("icon-trash", "btn-danger", () => SadeDB.dropPoints(selectedPointIds))
-    ) ++
-      TableRenderer.renderTable[(Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])](
-      ("", {p => SHtml.ajaxCheckbox(selectedPointIds.contains(p._1.id), checked => {
-        if (checked) selectedPointIds += p._1.id else selectedPointIds -= p._1.id
-        JsCmds.Noop
-      })}),
-      ("Time", {p => Text(p._1.id.toString)}),
-      ("Point Index", {p => Text(p._1.pointIndex.toString)}),
-      ("Dir index", {p => Text(p._1.dirIndex.toString)}),
-      ("Direction", {p => Text(p._1.direction.toString)}),
-      ("Value", {p => Text(p._2.map(_.meanValue.toString).getOrElse(""))}),
-      ("Absolute error", {p => Text(p._2.map(_.absoluteError.toString).getOrElse(""))}),
-      ("Frequency", {p => Text(p._2.map(_.meanFrequency.toString).getOrElse(""))}),
-      ("Analyze started", {p => Text(p._3.map(_.analyzeStarted.toString).getOrElse(""))})
-    )(SadeDB.analyzeResultAndTokenStatus(expName).toSeq)
+    {
+      val tableSeq = SadeDB.analyzeResultAndTokenStatus(expName).toSeq
+      renderActions(
+        Action("icon-refresh", "btn-warning", () => SadeDB.dropAnalyze(selectedPointIds)),
+        Action("icon-trash", "btn-danger", () => SadeDB.dropPoints(selectedPointIds))
+      ) ++
+        TableRenderer.renderTable[(Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])](
+          (SHtml.ajaxCheckbox(selectedPointIds.size == tableSeq.size, v => {
+            if (v) selectedPointIds ++= tableSeq.map(_._1.id) else selectedPointIds = Set()
+            tableUpdateCmd
+          }), {
+            p => SHtml.ajaxCheckbox(selectedPointIds.contains(p._1.id), checked => {
+              if (checked) selectedPointIds += p._1.id else selectedPointIds -= p._1.id
+              JsCmds.Noop
+            })
+          }),
+          (Text("Time"), {
+            p => Text(p._1.id.toString)
+          }),
+          (Text("Point Index"), {
+            p => Text(p._1.pointIndex.toString)
+          }),
+          (Text("Dir index"), {
+            p => Text(p._1.dirIndex.toString)
+          }),
+          (Text("Direction"), {
+            p => Text(p._1.direction.toString)
+          }),
+          (Text("Value"), {
+            p => Text(p._2.map(_.meanValue.toString).getOrElse(""))
+          }),
+          (Text("Absolute error"), {
+            p => Text(p._2.map(_.absoluteError.toString).getOrElse(""))
+          }),
+          (Text("Frequency"), {
+            p => Text(p._2.map(_.meanFrequency.toString).getOrElse(""))
+          }),
+          (Text("Analyze started"), {
+            p => Text(p._3.map(_.analyzeStarted.toString).getOrElse(""))
+          })
+        )(tableSeq)
+    }
 
     def tableUpdateCmd = SetHtml(contentId, table)
 

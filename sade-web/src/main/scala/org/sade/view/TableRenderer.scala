@@ -18,7 +18,7 @@ object TableRenderer {
       </tbody>
     </table>
 
-  def renderTable[T](columns: (String, T => NodeSeq)*)(items: Seq[T]): NodeSeq = {
+  def renderTable[T](columns: (NodeSeq, T => NodeSeq)*)(items: Seq[T]): NodeSeq = {
     val tableBind = "table *" #> (
       "thead *" #> (
         "tr *" #> (
