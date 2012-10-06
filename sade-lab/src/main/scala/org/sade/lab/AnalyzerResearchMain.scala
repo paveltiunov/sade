@@ -200,7 +200,7 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
       val sample = reader.chunkArrayStream.head.map(_.toDouble)
       val period = JacobiAngerAnalyzer.ScanPeriod(sample)
       stream.close()
-      JacobiAngerAnalyzer.ReScale(sample.take(period))
+      JacobiAngerAnalyzer.ReScale(sample.take(period.toInt)).values
     }).getOrElse(TestSample.prepareSample(1, omegaDefault, math.Pi * 2 / 512.0, phiDefault, deltaDefault, 0, 512))
   }
 

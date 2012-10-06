@@ -2,6 +2,8 @@ package org.sade.analyzers;
 
 import org.apache.commons.math.complex.Complex;
 import org.sade.analyzers.math.FFT;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +11,7 @@ import java.util.List;
 
 public class JacobiAngerAnalyzer
 {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private AnalyzeResult lastAnalyzeResult;
     private double[] previousSamples;
     public static final double Precision = 1E-4;
@@ -20,18 +23,19 @@ public class JacobiAngerAnalyzer
 
     public MinimizeResult AnalyzeSample(double[] sample, double omega, double delta, double phi)
     {
-        return AnalyzeSample(sample, new MinimizeParameters(omega, delta, phi));
+        return AnalyzeSample(sample, new MinimizeParameters(omega, delta, phi), sample.length).minimizeResult;
     }
 
-    private MinimizeResult AnalyzeSample(double[] sample, MinimizeParameters minimizeParameters)
+    private AnalyzeResultWithAmplitude AnalyzeSample(double[] sample, MinimizeParameters minimizeParameters, double realPeriod)
     {
-        Complex[] firstCoeff = GetFirstCoefficients(ReScale(sample));
+        ReScaleResult reScaleResult = ReScale(sample);
+        Complex[] firstCoeff = GetFirstCoefficients(reScaleResult.values, realPeriod);
         MinimizeResult result = new MinimizeResult(0, minimizeParameters);
         result = MinimizeErrorFunction(result.getParameters(), Arrays.copyOf(firstCoeff, FourierCoeffCount));
-        return result;
+        return new AnalyzeResultWithAmplitude(result, reScaleResult.amplitude, reScaleResult.center);
     }
 
-    public static double[] ReScale(double[] sample)
+    public static ReScaleResult ReScale(double[] sample)
     {
         double min = sample[0];
         for (double v : sample) {
@@ -48,12 +52,12 @@ public class JacobiAngerAnalyzer
             double v = sample[i];
             result[i] = (v - center)/amplitude;
         }
-        return result;
+        return new ReScaleResult(result, amplitude, center);
     }
 
-    private Complex[] GetFirstCoefficients(double[] sample)
+    private Complex[] GetFirstCoefficients(double[] sample, double realPeriod)
     {
-        return FFT.transform(sample, FourierCoeffCount);
+        return FFT.transform(sample, FourierCoeffCount, sample.length / realPeriod);
     }
 
     private MinimizeResult MinimizeErrorFunction(MinimizeParameters initialParams, Complex[] fourierCoefficients)
@@ -75,7 +79,7 @@ public class JacobiAngerAnalyzer
     {
         List<AnalyzeResult> analyzeResults = new ArrayList<AnalyzeResult>();
 
-        int searchPeriod = IsFirstAnalyze() ? ScanPeriod(sample) : lastAnalyzeResult.getPeriod();
+        double searchPeriod = IsFirstAnalyze() ? ScanPeriod(sample) : lastAnalyzeResult.getPeriod();
         if (!IsFirstAnalyze())
         {
             double[] newSample = Arrays.copyOf(previousSamples, previousSamples.length + sample.length);
@@ -85,9 +89,9 @@ public class JacobiAngerAnalyzer
 
         final double searchPeriodCoeff = 0.01;
 
-        for (; sample.length > sizeForSearchPeriod(searchPeriod, searchPeriodCoeff); sample = skip(sample, searchPeriod))
+        for (; sample.length > sizeForSearchPeriod(searchPeriod, searchPeriodCoeff); sample = skip(sample, (int) Math.round(searchPeriod)))
         {
-            double[] sampleToAnalyze = take(sample, searchPeriod);
+            double[] sampleToAnalyze = take(sample, (int) Math.round(searchPeriod));
             if (IsFirstAnalyze())
             {
                 lastAnalyzeResult = rescanAnalyze(searchPeriod, sampleToAnalyze);
@@ -97,7 +101,7 @@ public class JacobiAngerAnalyzer
                 searchPeriod = searchPeriodInInterval(sample, searchPeriod);
                 AnalyzeResult analyzeResult = analyzeNextByPrevious(sampleToAnalyze, searchPeriod);
                 if (isOverErrorThreshold(analyzeResult)) {
-                    searchPeriod = analyzeWithOversample(take(sample, sizeForSearchPeriod(searchPeriod, searchPeriodCoeff)), searchPeriodCoeff, sampleToAnalyze, 2);
+                    lastAnalyzeResult = rescanAnalyze(searchPeriod, sampleToAnalyze);
                 } else {
                     lastAnalyzeResult = analyzeResult;
                 }
@@ -108,62 +112,29 @@ public class JacobiAngerAnalyzer
         return analyzeResults;
     }
 
-    private static int searchPeriodInInterval(double[] sample, int searchPeriod) {
-        return SearchPeriod(sample, (int)Math.round(searchPeriod * 0.95), (int)Math.round(searchPeriod * 1.05));
+    private static double searchPeriodInInterval(double[] sample, double searchPeriod) {
+        return SearchPeriod(sample, searchPeriod * 0.95, searchPeriod * 1.05, 0);
     }
 
-    private int sizeForSearchPeriod(int searchPeriod, double searchPeriodCoeff) {
+    private int sizeForSearchPeriod(double searchPeriod, double searchPeriodCoeff) {
         return (int)Math.round(searchPeriod * (1 + searchPeriodCoeff * 8))*2+1;
-    }
-
-    private int analyzeWithOversample(double[] sample, double searchPeriodCoeff, double[] sampleToAnalyze, int oversampleRate) {
-        double[] oversample = oversample(sample);
-        int doublePeriod = searchOversampledPeriod(searchPeriodCoeff, oversample, oversampleRate);
-        float realPeriod = 1.0f * doublePeriod / oversampleRate;
-        if (doublePeriod % 2 != 0 && oversampleRate < 128 || oversampleRate < 16) {
-            return analyzeWithOversample(oversample, searchPeriodCoeff, take(oversample, doublePeriod), oversampleRate * 2);
-        } else {
-            AnalyzeResult analyzeResult = analyzeNextByPrevious(sampleToAnalyze, realPeriod);
-            if (isOverErrorThreshold(analyzeResult)) {
-                lastAnalyzeResult = rescanAnalyze(realPeriod, sampleToAnalyze);
-            } else {
-                lastAnalyzeResult = analyzeResult;
-            }
-        }
-        return lastAnalyzeResult.getPeriod();
     }
 
     public static boolean isOverErrorThreshold(AnalyzeResult analyzeResult) {
         return analyzeResult.getMinimizeError() > 0.2;
     }
 
-    private AnalyzeResult analyzeNextByPrevious(double[] sampleToAnalyze, float realPeriod) {
-        return new AnalyzeResult(AnalyzeSample(sampleToAnalyze, lastAnalyzeResult.getParameters()), realPeriod);
-    }
-
-    private double[] oversample(double[] sample) {
-        double[] result = new double[sample.length * 2 - 1];
-        for (int i = 0; i < sample.length - 1; i++) {
-            result[i * 2] = sample[i];
-            result[i * 2 + 1] = (sample[i] + sample[i + 1]) / 2;
-        }
-        result[result.length - 1] = sample[sample.length - 1];
+    private AnalyzeResult analyzeNextByPrevious(double[] sampleToAnalyze, double realPeriod) {
+        AnalyzeResultWithAmplitude analyzeResultWithAmplitude = AnalyzeSample(sampleToAnalyze, lastAnalyzeResult.getParameters(), realPeriod);
+        AnalyzeResult result = new AnalyzeResult(analyzeResultWithAmplitude.minimizeResult, realPeriod, analyzeResultWithAmplitude.amplitude, analyzeResultWithAmplitude.center);
+        if (logger.isDebugEnabled())
+            logger.debug("analyzeNextByPrevious: " + result);
         return result;
     }
 
-    private AnalyzeResult rescanAnalyze(float searchPeriod, double[] sampleToAnalyze) {
-        return new AnalyzeResult(ScanForEntryParameters(sampleToAnalyze), searchPeriod);
-    }
-
-    private int searchOversampledPeriod(double searchPeriodCoeff, double[] oversample, int oversampleRate) {
-        return SearchPeriod(oversample,
-                multiplyLastPeriodByPercent(-searchPeriodCoeff, lastAnalyzeResult.getPeriod() * oversampleRate),
-                multiplyLastPeriodByPercent(searchPeriodCoeff, lastAnalyzeResult.getPeriod() * oversampleRate)
-        );
-    }
-
-    private int multiplyLastPeriodByPercent(double coeff, int period) {
-        return (int) Math.round(period * (1 + coeff));
+    private AnalyzeResult rescanAnalyze(double searchPeriod, double[] sampleToAnalyze) {
+        AnalyzeResultWithAmplitude analyzeResultWithAmplitude = ScanForEntryParameters(sampleToAnalyze, searchPeriod);
+        return new AnalyzeResult(analyzeResultWithAmplitude.minimizeResult, searchPeriod, analyzeResultWithAmplitude.amplitude, analyzeResultWithAmplitude.center);
     }
 
     public static double[] take(double[] sample, int searchPeriod) {
@@ -180,12 +151,11 @@ public class JacobiAngerAnalyzer
         return dest;
     }
 
-    public static int ScanPeriod(double[] sample)
+    public static double ScanPeriod(double[] sample)
     {
         int log = (int)Math.pow(2, Math.floor(Math.log(sample.length) / Math.log(2)));
         double frequency = FrequencyEvaluator.evaluateFrequency(take(sample, log));
-        double period = 1/frequency;
-        int searchPeriod = (int) period;
+        double searchPeriod = 1/frequency;
         searchPeriod = searchPeriodInInterval(sample, searchPeriod);
         return searchPeriod;
     }
@@ -206,45 +176,84 @@ public class JacobiAngerAnalyzer
         return params;
     }
 
-    private MinimizeResult ScanForEntryParameters(double[] sampleToAnalyze)
+    private AnalyzeResultWithAmplitude ScanForEntryParameters(double[] sampleToAnalyze, double realPeriod)
     {
-        List<MinimizeResult> results = new ArrayList<MinimizeResult>();
+        if (logger.isDebugEnabled())
+            logger.debug("ScanForEntryParameters");
+        List<AnalyzeResultWithAmplitude> results = new ArrayList<AnalyzeResultWithAmplitude>();
         for (MinimizeParameters minimizeParameters : scanParameters) {
-            MinimizeResult minimizeResult = AnalyzeSample(sampleToAnalyze, minimizeParameters);
-            double delta = minimizeResult.getParameters().getDelta();
-            double omega = minimizeResult.getParameters().getOmega();
-            if (delta > Math.PI || delta < 0.0 || omega < 2.0) continue;
+            AnalyzeResultWithAmplitude minimizeResult = AnalyzeSample(sampleToAnalyze, minimizeParameters, realPeriod);
+            double delta = minimizeResult.minimizeResult.getParameters().getDelta();
+            double omega = minimizeResult.minimizeResult.getParameters().getOmega();
+            if (delta > Math.PI || delta < 0.0 || omega < 1.0) continue;
+            if (logger.isDebugEnabled())
+                logger.debug("Result found: " + minimizeResult);
             results.add(minimizeResult);
         }
-        double min = results.get(0).getError();
-        MinimizeResult minResult = null;
-        for (MinimizeResult minimizeResult : results) {
-            min = Math.min(min, minimizeResult.getError());
-            if (min == minimizeResult.getError()) minResult = minimizeResult;
+        double min = results.get(0).minimizeResult.getError();
+        AnalyzeResultWithAmplitude minResult = null;
+        for (AnalyzeResultWithAmplitude minimizeResult : results) {
+            min = Math.min(min, minimizeResult.minimizeResult.getError());
+            if (min == minimizeResult.minimizeResult.getError()) minResult = minimizeResult;
         }
+        if (logger.isDebugEnabled())
+            logger.debug("Result won: " + minResult);
         return minResult;
     }
 
-    private static int SearchPeriod(double[] sample, int from, int to)
+    private static double SearchPeriod(double[] sample, double from, double to, int iterations)
     {
-        double[] twoPeriods = take(sample, from * 2);
-        Complex[] first = FFT.transform(take(twoPeriods, from), 2);
-        Complex[] second = FFT.transform(skip(twoPeriods, from), 2);
+        double[] twoPeriods = take(sample, (int) (Math.round(from) * 2));
+        Complex[] first = FFT.transform(take(twoPeriods, (int) Math.round(from)), 2, 1.0);
+        Complex[] second = FFT.transform(skip(twoPeriods, (int) Math.round(from)), 2, 1.0);
         double phaseDiff = first[1].getArgument() - second[1].getArgument();
         phaseDiff = (Math.abs(phaseDiff) % (Math.PI * 2)) * Math.signum(phaseDiff);
         if (phaseDiff < -Math.PI) phaseDiff += Math.PI * 2;
         if (phaseDiff > Math.PI) phaseDiff -= Math.PI * 2;
-        int period = (int) (from + Math.round((phaseDiff / (2 * Math.PI)) * from));
+        double period = (from + (phaseDiff / (2 * Math.PI) * from));
         if (period >= from && period <= to) {
-            int center = Math.round((from + to) / 2.0f);
-            int periodDiff = Math.abs(center - period);
-            if (center - periodDiff == from && center + periodDiff == to)
+            double center = (from + to) / 2.0f;
+            double periodDiff = Math.abs(center - period);
+            if (periodDiff < 1E-2 || iterations > 1000)
                 return period;
             else
-                return SearchPeriod(sample, center - periodDiff, center + periodDiff);
+                return SearchPeriod(sample, center - periodDiff, center + periodDiff, iterations + 1);
         } else {
             return Math.min(Math.max(period, from), to);
         }
     }
 
+}
+
+class ReScaleResult {
+    public final double[] values;
+    public final double amplitude;
+    public final double center;
+
+    ReScaleResult(double[] values, double amplitude, double center) {
+        this.values = values;
+        this.amplitude = amplitude;
+        this.center = center;
+    }
+}
+
+class AnalyzeResultWithAmplitude {
+    public final MinimizeResult minimizeResult;
+    public final double amplitude;
+    public final double center;
+
+    AnalyzeResultWithAmplitude(MinimizeResult minimizeResult, double amplitude, double center) {
+        this.minimizeResult = minimizeResult;
+        this.amplitude = amplitude;
+        this.center = center;
+    }
+
+    @Override
+    public String toString() {
+        return "AnalyzeResultWithAmplitude{" +
+                "minimizeResult=" + minimizeResult +
+                ", amplitude=" + amplitude +
+                ", center=" + center +
+                '}';
+    }
 }

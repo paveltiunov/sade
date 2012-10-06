@@ -23,13 +23,9 @@ class SignalAnalyzer(inputStream: InputStream, statusListener: Option[Float => U
   }
 
   def estimatedSignal = {
-    val max = originalSignal.max
-    val min = originalSignal.min
-    val amplitude = (max - min) / 2
-    val center = (max + min) / 2
     analyzeResults.flatMap(r => {
       (0 until r.getPeriod).map(i => {
-        amplitude * cos(r.getParameters.getOmega * cos(2 * Pi * i / r.getPeriod + r.getParameters.getPhi) + r.getParameters.getDelta) + center
+        r.getAmplitude * cos(r.getParameters.getOmega * cos(2 * Pi * i / r.getPeriod + r.getParameters.getPhi) + r.getParameters.getDelta) + r.getCenter
       })
     }).take(originalSignal.size)
   }
