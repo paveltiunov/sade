@@ -18,7 +18,7 @@ object SadeDB extends Schema with PrimitiveTypeMode {
 
   val analyzeTokens = table[AnalyzeToken]()
 
-  def contentByPoint(point: Point) = pointContents.lookup(point.id).get
+  def contentByPoint(pointId: Timestamp) = pointContents.lookup(pointId).get
 
   def skyMapPoints(expName: String): Iterable[SkyMapPoint] = from(points, analyzeResults) ((content, result) => {
     where((content.id === result.id) and (content.expName === expName)) select ((content, result))
@@ -74,26 +74,7 @@ case class Point(
   )
 
   def content = {
-    val content = SadeDB.contentByPoint(this).content
-    val inputStream = new ByteArrayInputStream(content)
-    if ((inputStream.read() | inputStream.read() << 8) == GZIPInputStream.GZIP_MAGIC)
-      ungzipContent(content)
-    else content
-  }
-
-  private def ungzipContent(content: Array[Byte]) = {
-    val inputStream = new GZIPInputStream(new ByteArrayInputStream(content))
-    val outputStream = new ByteArrayOutputStream()
-    val buffer = Array.ofDim[Byte](8192)
-    @tailrec def readStream() {
-      val read = inputStream.read(buffer)
-      if (read > 0) {
-        outputStream.write(buffer, 0, read)
-        readStream()
-      }
-    }
-    readStream()
-    outputStream.toByteArray
+    Point.unzippedContentBy(id)
   }
 }
 
@@ -118,5 +99,28 @@ case class AnalyzeToken(
 object Point {
   def apply(coordinate: MeasuredPointCoordinates, expName: String): Point = {
     Point(new Timestamp(coordinate.time.getTime), expName, coordinate.pointIndex, coordinate.pointCount, coordinate.dirIndex, coordinate.direction)
+  }
+
+  def unzippedContentBy(pointId: Timestamp): Array[Byte] = {
+    val content = SadeDB.contentByPoint(pointId).content
+    val inputStream = new ByteArrayInputStream(content)
+    if ((inputStream.read() | inputStream.read() << 8) == GZIPInputStream.GZIP_MAGIC)
+      ungzipContent(content)
+    else content
+  }
+
+  private def ungzipContent(content: Array[Byte]) = {
+    val inputStream = new GZIPInputStream(new ByteArrayInputStream(content))
+    val outputStream = new ByteArrayOutputStream()
+    val buffer = Array.ofDim[Byte](8192)
+    @tailrec def readStream() {
+      val read = inputStream.read(buffer)
+      if (read > 0) {
+        outputStream.write(buffer, 0, read)
+        readStream()
+      }
+    }
+    readStream()
+    outputStream.toByteArray
   }
 }

@@ -1,15 +1,16 @@
 package org.sade.worker
 
-import org.sade.analyzers.AnalyzerFactory
-import org.squeryl.PrimitiveTypeMode
-import java.io.ByteArrayInputStream
+import org.sade.analyzers.{SignalAnalyzer, AnalyzerFactory}
+import org.squeryl.PrimitiveTypeMode._
+import java.io.{InputStream, ByteArrayInputStream}
 import java.util.Date
 import java.sql.Timestamp
 import org.slf4j.LoggerFactory
 import org.sade.model.{Point, AnalyzeToken, AnalyzeResult, SadeDB}
+import akka.actor.{Address, OneForOneStrategy, Props, Actor}
+import akka.routing.{RemoteRouterConfig, SmallestMailboxRouter}
 
-
-class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode {
+class AnalyzeWorker extends Actor {
   val logger = LoggerFactory.getLogger(getClass)
 
   def resultDoNotExists(c: Point) = {
@@ -18,47 +19,102 @@ class AnalyzeWorker(analyzerFactory: AnalyzerFactory) extends PrimitiveTypeMode 
     })
   }
 
-  def findNeverAnalyzedPointAndInsertToken(now: Timestamp): Option[Point] = {
+  def findPointsWithoutResult: Seq[Point] = {
     from(SadeDB.points)(c =>
-      where(
-        resultDoNotExists(c) and
-          notExists(from(SadeDB.analyzeTokens) {
-            t => where(t.id === c.id) select (t)
-          })
-      )
-        select (c)
-    ).forUpdate.headOption.map(p => {
-      SadeDB.analyzeTokens.insert(AnalyzeToken(p.id, now))
-      p
-    })
+      where(resultDoNotExists(c)) select (c)
+    ).toList
   }
 
-  def findFailedAnalyzePointAndUpdateToken(now: Timestamp): Option[Point] = {
-    from(SadeDB.points, SadeDB.analyzeTokens)((content, token) => {
-      where((content.id === token.id) and resultDoNotExists(content) and (token.analyzeStarted lt new Timestamp(new Date().getTime - 5 * 60 * 1000))) select ((token, content))
-    }).forUpdate.headOption.map {
-      case (token, content) => {
-        SadeDB.analyzeTokens.update(token.copy(analyzeStarted = now))
-        content
-      }
-    }
+  var timeouted = Set[Timestamp]()
+  var analyzing = Seq[Timestamp]()
+  var currentHosts = Set[String]()
+  var analyzer = createAnalyzer
+  var analyzeStarted = Map[Timestamp, Long]()
+
+  private def createAnalyzer = {
+    context.actorOf(
+      Props[SinglePointAnalyzer]
+        .withRouter(RemoteRouterConfig(SmallestMailboxRouter(nrOfInstances = workersNum), currentHosts.map(h => Address("akka", context.system.name, h, 2552)))))
   }
 
-  def analyzeNextPoint() = {
-    val now = new Timestamp(new Date().getTime)
-    val notAnalyzedPoint = inTransaction {
-      findFailedAnalyzePointAndUpdateToken(now).orElse(findNeverAnalyzedPointAndInsertToken(now))
+  private def sendAnalyzePoints() {
+    analyzeStarted = analyzeStarted.filter(kv => (System.currentTimeMillis() - kv._2) > 1000 * 600)
+    val toSend = analyzing.take(workersNum - analyzeStarted.size)
+    toSend.foreach(id => analyzer ! AnalyzePoint(id))
+    analyzing = analyzing.filterNot(toSend.contains)
+    analyzeStarted ++= toSend.map(_ -> System.currentTimeMillis()).toMap
+  }
+
+
+  def workersNum: Int = {
+    currentHosts.size * Runtime.getRuntime.availableProcessors()
+  }
+
+  protected def receive = {
+    case UpdateHosts(hosts) => {
+      currentHosts = hosts
+      logger.info("Updating hosts: " + currentHosts)
+      analyzer = createAnalyzer
+      self ! StartAllNotStarted
     }
-    notAnalyzedPoint.foreach(point => {
-      val timeMillis = System.currentTimeMillis()
-      logger.info("Start work on point timed at: " + point.id)
-      val content = inTransaction(point.content)
-      val analyzer = analyzerFactory.createAnalyzer(new ByteArrayInputStream(content))
+    case StartAllNotStarted => {
+      val withoutResult = inTransaction(findPointsWithoutResult)
+      val toAnalyze = withoutResult.map(_.id).toSet -- analyzing -- timeouted
+      logger.info("Starting all not started points. Point to be analyzed: " + toAnalyze.size)
+      analyzing ++= toAnalyze
+      logger.info("Current analyze size: " + analyzing.size)
+      sendAnalyzePoints()
+    }
+    case CommitResult(analyzeResult) => {
+      logger.info("Receive commit result: " + analyzeResult)
       inTransaction {
-        SadeDB.analyzeResults.insert(AnalyzeResult(point.id, analyzer.meanValue, analyzer.absoluteError, analyzer.meanFrequency))
+        SadeDB.analyzeResults.insert(analyzeResult)
       }
-      logger.info("Finished work on point timed at: " + point.id + ", elapsed time: " + (System.currentTimeMillis() - timeMillis) + "ms")
-    })
-    notAnalyzedPoint.isDefined
+      analyzeStarted -= analyzeResult.id
+      sendAnalyzePoints()
+      logger.info("Current analyze size: " + analyzing.size)
+    }
+    case PointTimeout(id) => {
+      logger.info("Receive timeout: " + id)
+      analyzeStarted -= id
+      timeouted += id
+      sendAnalyzePoints()
+    }
+  }
+}
+
+case object StartAllNotStarted
+
+case class UpdateHosts(hosts: Set[String])
+
+case class AnalyzePoint(id: Timestamp)
+
+case class CommitResult(result: AnalyzeResult)
+
+case class PointTimeout(id: Timestamp)
+
+class PointTimeoutException extends RuntimeException
+
+class SinglePointAnalyzer extends Actor {
+  val analyzerFactory = new AnalyzerFactory {
+    def createAnalyzer(inputStream: InputStream) = new SignalAnalyzer(inputStream)
+  }
+
+  val logger = LoggerFactory.getLogger(getClass)
+
+  protected def receive = {
+    case AnalyzePoint(id: Timestamp) => {
+      val timeMillis = System.currentTimeMillis()
+      logger.info("Start work on point timed at: " + id)
+      val content = inTransaction(Point.unzippedContentBy(id))
+      val analyzer = new SignalAnalyzer(new ByteArrayInputStream(content), Some(f => {
+        if (System.currentTimeMillis() - timeMillis > 1000 * 300) {
+          sender ! PointTimeout(id)
+          throw new PointTimeoutException
+        }
+      }))
+      sender ! CommitResult(AnalyzeResult(id, analyzer.meanValue, analyzer.absoluteError, analyzer.meanFrequency))
+      logger.info("Finished work on point timed at: " + id + ", elapsed time: " + (System.currentTimeMillis() - timeMillis) + "ms")
+    }
   }
 }
