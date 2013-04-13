@@ -6,14 +6,14 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.actor.RootActorPath
 import java.net.InetAddress
+import akka.util.duration._
 
 
 class WorkerInitServlet extends HttpServlet {
   override def init() {
     SadeActors.mainWorker //TODO
     if (!WorkerInitServlet.disableWorker) {
-      SadeActors.mainWorker !
-        RegisterHost(InetAddress.getLocalHost.getHostAddress, WorkerInitServlet.akkaPort)
+      SadeActors.system.scheduler.schedule(0 minutes, 1 minutes, SadeActors.mainWorker, RegisterHost(InetAddress.getLocalHost.getHostAddress, WorkerInitServlet.akkaPort))
     }
   }
 }
