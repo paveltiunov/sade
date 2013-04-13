@@ -14,7 +14,7 @@ import net.liftweb.http.{LiftView, TemplateFinder, SHtml}
 import org.sade.starcoords.SkyMapPoint
 import java.sql.Timestamp
 import org.sade.servlet.SadeActors
-import org.sade.worker.StartExp
+import org.sade.worker.{StopExp, AnalyzeState, GetAnalyzeState, StartExp}
 import net.liftweb.http.js.jquery.JqJE.JqId
 import net.liftweb.common.Full
 import org.sade.model.AnalyzeToken
@@ -23,8 +23,9 @@ import scala.xml.Text
 import net.liftweb.http.js.jquery.JqJE.JqAttr
 import net.liftweb.http.js.JsCmds.SetHtml
 import net.liftweb.http.js.jquery.JqJsCmds.JqOnLoad
-import org.sade.worker.StartExp
 import net.liftweb.http.js.jquery.JqJsCmds.JqSetHtml
+import akka.util.{Duration, Timeout}
+import java.util.concurrent.TimeUnit
 
 class AnalyzeResult extends LiftView {
   def dispatch = {
@@ -77,11 +78,23 @@ class AnalyzeResult extends LiftView {
   }
 
 
-  def startButton(expName: String, started: Boolean = false): Elem = {
-    SHtml.ajaxButton("Start analyze", () => {
-      SadeActors.mainWorker ! StartExp(expName)
-      JqSetHtml("start-button", startButton(expName, true))
-    }, "class" -> "btn btn-success%s".format(if (started) " disabled" else ""))
+  import akka.pattern.ask
+  import akka.dispatch.Await
+
+  def startButton(expName: String): Elem = {
+    implicit val timeout = Timeout(5 seconds)
+    val started = Await.result((SadeActors.mainWorker ? GetAnalyzeState(expName)).mapTo[AnalyzeState].map(_.analyzing), Duration(5, TimeUnit.SECONDS))
+    if (!started) {
+      SHtml.ajaxButton("Start analyze", () => {
+        SadeActors.mainWorker ! StartExp(expName)
+        JqSetHtml("start-button", startButton(expName))
+      }, "class" -> "btn btn-success")
+    } else {
+      SHtml.ajaxButton("Stop analyze", () => {
+        SadeActors.mainWorker ! StopExp(expName)
+        JqSetHtml("start-button", startButton(expName))
+      }, "class" -> "btn btn-danger")
+    }
   }
 
   private def statistics(expName: String) = {

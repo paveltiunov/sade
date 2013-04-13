@@ -19,7 +19,7 @@ class AnalyzeWorker extends Actor {
     })
   }
 
-  def findPointsWithoutResult(expName: Option[String] = None): Seq[Point] = {
+  def findPointsWithoutResult(expName: Option[String] = None): Seq[Point] = inTransaction {
     from(SadeDB.points)(c =>
       where(resultDoNotExists(c) and expName.map(c.expName === _).getOrElse(1 === 1)) select (c)
     ).toList
@@ -62,6 +62,10 @@ class AnalyzeWorker extends Actor {
     }
     case StartAllNotStarted => startAnalyzeForExp(None)
     case StartExp(expName) => startAnalyzeForExp(Some(expName))
+    case StopExp(expName) => {
+      val withoutResult = findPointsWithoutResult(Some(expName)).map(_.id).toSet
+      analyzing = analyzing.filterNot(withoutResult.contains)
+    }
     case CommitResult(analyzeResult) => {
       logger.info("Receive commit result: " + analyzeResult)
       inTransaction {
@@ -80,7 +84,7 @@ class AnalyzeWorker extends Actor {
   }
 
   def startAnalyzeForExp(expName: Option[String]) {
-    val withoutResult = inTransaction(findPointsWithoutResult(expName))
+    val withoutResult = findPointsWithoutResult(expName)
     val toAnalyze = withoutResult.map(_.id).toSet -- analyzing -- timeouted
     logger.info("Starting all not started points. Point to be analyzed: " + toAnalyze.size)
     analyzing ++= toAnalyze
@@ -92,6 +96,8 @@ class AnalyzeWorker extends Actor {
 case object StartAllNotStarted
 
 case class StartExp(expName: String)
+
+case class StopExp(expName: String)
 
 case class UpdateHosts(hosts: Set[RegisterHost])
 
