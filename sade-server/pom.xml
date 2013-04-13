@@ -35,7 +35,7 @@
         </dependency>
         <dependency>
             <groupId>org.squeryl</groupId>
-            <artifactId>squeryl_2.9.1</artifactId>
+            <artifactId>squeryl_${scala.version}</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.8.1</artifactId>
+            <artifactId>scalatest_${scala.version}</artifactId>
         </dependency>
     </dependencies>
     <build>

@@ -8,7 +8,6 @@ import org.scalatest.matchers.{MustMatchers}
 import java.util.{TimeZone, GregorianCalendar}
 import math._
 
-@RunWith(classOf[JUnitRunner])
 class StarCoordsConverterTest extends Spec with MustMatchers {
   def assertCoords(coords: FullStandCoordinate, expectedDelta: Double, expectedT: Double) {
     val deltaTime = StarCoordsConverter.toDeltaTime(coords)

@@ -1,7 +1,7 @@
 package org.sade.view
 
-import xml.{Null, UnprefixedAttribute, Text, NodeSeq}
-import net.liftweb.http.js.jquery.JqJsCmds.{Show, Hide, JqOnLoad}
+import scala.xml._
+import net.liftweb.http.js.jquery.JqJsCmds.{JqSetHtml, Show, Hide, JqOnLoad}
 import net.liftweb.http.js.{JsCmds, JsCmd}
 import net.liftweb.util.Helpers._
 import net.liftweb.http.js.jquery.JqJE.{JqAttr, JqId}
@@ -13,6 +13,18 @@ import org.sade.view.AnalyzeResultImageView
 import net.liftweb.http.{LiftView, TemplateFinder, SHtml}
 import org.sade.starcoords.SkyMapPoint
 import java.sql.Timestamp
+import org.sade.servlet.SadeActors
+import org.sade.worker.StartExp
+import net.liftweb.http.js.jquery.JqJE.JqId
+import net.liftweb.common.Full
+import org.sade.model.AnalyzeToken
+import org.sade.view.Interval
+import scala.xml.Text
+import net.liftweb.http.js.jquery.JqJE.JqAttr
+import net.liftweb.http.js.JsCmds.SetHtml
+import net.liftweb.http.js.jquery.JqJsCmds.JqOnLoad
+import org.sade.worker.StartExp
+import net.liftweb.http.js.jquery.JqJsCmds.JqSetHtml
 
 class AnalyzeResult extends LiftView {
   def dispatch = {
@@ -47,6 +59,7 @@ class AnalyzeResult extends LiftView {
     val binding =
       "#exp-name *" #> expName &
       "#result-image [src]" #> imageUrl &
+      "#start-button *" #> startButton(expName) &
       "#mode-selector *" #> SHtml.ajaxSelect(Seq("plane" -> "Plane", "galactic" -> "Galactic"), Full("plane"), v => {
         viewMode = v
         loadImageCmd
@@ -61,6 +74,14 @@ class AnalyzeResult extends LiftView {
       }) &
       "#dataMode *" #> (new DataModes(expName).modePills)
     <lift:surround with="default" at="content">{binding(template) ++ head}</lift:surround>
+  }
+
+
+  def startButton(expName: String, started: Boolean = false): Elem = {
+    SHtml.ajaxButton("Start analyze", () => {
+      SadeActors.mainWorker ! StartExp(expName)
+      JqSetHtml("start-button", startButton(expName, true))
+    }, "class" -> "btn btn-success%s".format(if (started) " disabled" else ""))
   }
 
   private def statistics(expName: String) = {

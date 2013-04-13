@@ -20,7 +20,7 @@ trait StubWebServerRunner extends PrimitiveTypeMode {
   @Before
   def startJetty() {
     WorkerInitServlet.disableWorker = true
-    StubWebRunner.prepareJettyAndStart()
+    StubWebRunner.prepareJettyAndStart(8080)
     session.connection.setAutoCommit(false)
     session.bindToCurrentThread
   }
@@ -45,13 +45,13 @@ object StubWebRunner {
     initialContext.bind("SadeDS", source)
   }
 
-  def prepareJettyAndStart() {
+  def prepareJettyAndStart(port: Int = 8080) {
     if (!prepared) {
       prepareDataSource(jdbcUrl)
 
       val server = new Server
       val scc = new SelectChannelConnector
-      scc.setPort(8080)
+      scc.setPort(port)
       server.setConnectors(Array(scc))
 
       val context = new WebAppContext()

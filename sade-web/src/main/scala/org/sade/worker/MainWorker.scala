@@ -10,12 +10,14 @@ import akka.util.duration._
 class MainWorker extends Actor {
   val logger = LoggerFactory.getLogger(getClass)
 
-  val analyzeWorker = context.actorOf(Props[AnalyzeWorker])
-  var registeredHosts = Set[String]()
+  val analyzeWorker = context.actorOf(Props[AnalyzeWorker], "worker")
+  var registeredHosts = Set[RegisterHost]()
 
   protected def receive = {
+    case s: StartExp => context.system.scheduler.schedule(0 minutes, 10 minutes, analyzeWorker, s)
     case StartAnalyze => context.system.scheduler.schedule(0 minutes, 10 minutes, analyzeWorker, StartAllNotStarted)
-    case RegisterHost(name) => {
+    case name: RegisterHost => {
+      logger.info("Register host: %s".format(name))
       if (registeredHosts + name != registeredHosts) {
         registeredHosts += name
         analyzeWorker ! UpdateHosts(registeredHosts)
@@ -26,4 +28,4 @@ class MainWorker extends Actor {
 
 case object StartAnalyze
 
-case class RegisterHost(hostName: String)
+case class RegisterHost(hostName: String, port: Int)

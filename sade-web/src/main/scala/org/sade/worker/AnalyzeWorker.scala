@@ -8,7 +8,7 @@ import java.sql.Timestamp
 import org.slf4j.LoggerFactory
 import org.sade.model.{Point, AnalyzeToken, AnalyzeResult, SadeDB}
 import akka.actor.{Address, OneForOneStrategy, Props, Actor}
-import akka.routing.{RemoteRouterConfig, SmallestMailboxRouter}
+import akka.routing.{RoundRobinRouter, RemoteRouterConfig, SmallestMailboxRouter}
 
 class AnalyzeWorker extends Actor {
   val logger = LoggerFactory.getLogger(getClass)
@@ -19,27 +19,31 @@ class AnalyzeWorker extends Actor {
     })
   }
 
-  def findPointsWithoutResult: Seq[Point] = {
+  def findPointsWithoutResult(expName: Option[String] = None): Seq[Point] = {
     from(SadeDB.points)(c =>
-      where(resultDoNotExists(c)) select (c)
+      where(resultDoNotExists(c) and expName.map(c.expName === _).getOrElse(1 === 1)) select (c)
     ).toList
   }
 
   var timeouted = Set[Timestamp]()
   var analyzing = Seq[Timestamp]()
-  var currentHosts = Set[String]()
+  var currentHosts = Set[RegisterHost]()
   var analyzer = createAnalyzer
   var analyzeStarted = Map[Timestamp, Long]()
 
   private def createAnalyzer = {
-    context.actorOf(
+    if (currentHosts.isEmpty) {
+      context.actorOf(Props[SinglePointAnalyzer])
+    } else context.actorOf(
       Props[SinglePointAnalyzer]
-        .withRouter(RemoteRouterConfig(SmallestMailboxRouter(nrOfInstances = workersNum), currentHosts.map(h => Address("akka", context.system.name, h, 2552)))))
+        .withRouter(RemoteRouterConfig(RoundRobinRouter(nrOfInstances = workersNum), currentHosts.map(h => Address("akka", context.system.name, h.hostName, h.port))))
+    )
   }
 
   private def sendAnalyzePoints() {
-    analyzeStarted = analyzeStarted.filter(kv => (System.currentTimeMillis() - kv._2) > 1000 * 600)
+    analyzeStarted = analyzeStarted.filterNot(kv => (System.currentTimeMillis() - kv._2) > 1000 * 600)
     val toSend = analyzing.take(workersNum - analyzeStarted.size)
+    logger.info("Sending tasks: %s".format(toSend))
     toSend.foreach(id => analyzer ! AnalyzePoint(id))
     analyzing = analyzing.filterNot(toSend.contains)
     analyzeStarted ++= toSend.map(_ -> System.currentTimeMillis()).toMap
@@ -55,20 +59,13 @@ class AnalyzeWorker extends Actor {
       currentHosts = hosts
       logger.info("Updating hosts: " + currentHosts)
       analyzer = createAnalyzer
-      self ! StartAllNotStarted
     }
-    case StartAllNotStarted => {
-      val withoutResult = inTransaction(findPointsWithoutResult)
-      val toAnalyze = withoutResult.map(_.id).toSet -- analyzing -- timeouted
-      logger.info("Starting all not started points. Point to be analyzed: " + toAnalyze.size)
-      analyzing ++= toAnalyze
-      logger.info("Current analyze size: " + analyzing.size)
-      sendAnalyzePoints()
-    }
+    case StartAllNotStarted => startAnalyzeForExp(None)
+    case StartExp(expName) => startAnalyzeForExp(Some(expName))
     case CommitResult(analyzeResult) => {
       logger.info("Receive commit result: " + analyzeResult)
       inTransaction {
-        SadeDB.analyzeResults.insert(analyzeResult)
+        SadeDB.analyzeResults.insertOrUpdate(analyzeResult)
       }
       analyzeStarted -= analyzeResult.id
       sendAnalyzePoints()
@@ -81,11 +78,22 @@ class AnalyzeWorker extends Actor {
       sendAnalyzePoints()
     }
   }
+
+  def startAnalyzeForExp(expName: Option[String]) {
+    val withoutResult = inTransaction(findPointsWithoutResult(expName))
+    val toAnalyze = withoutResult.map(_.id).toSet -- analyzing -- timeouted
+    logger.info("Starting all not started points. Point to be analyzed: " + toAnalyze.size)
+    analyzing ++= toAnalyze
+    logger.info("Current analyze size: " + analyzing.size)
+    sendAnalyzePoints()
+  }
 }
 
 case object StartAllNotStarted
 
-case class UpdateHosts(hosts: Set[String])
+case class StartExp(expName: String)
+
+case class UpdateHosts(hosts: Set[RegisterHost])
 
 case class AnalyzePoint(id: Timestamp)
 
