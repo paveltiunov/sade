@@ -30,6 +30,7 @@ class AnalyzeWorker extends Actor {
   var currentHosts = Set[RegisterHost]()
   var analyzer = createAnalyzer
   var analyzeStarted = Map[Timestamp, Long]()
+  var tries = Map[Timestamp, Int]().withDefault(_ => 0)
 
   private def createAnalyzer = {
     if (currentHosts.isEmpty) {
@@ -45,6 +46,7 @@ class AnalyzeWorker extends Actor {
     val toSend = analyzing.take(workersNum - analyzeStarted.size)
     logger.info("Sending tasks: %s".format(toSend))
     toSend.foreach(id => analyzer ! AnalyzePoint(id))
+    toSend.foreach(id => tries += id -> (tries(id) + 1))
     analyzing = analyzing.filterNot(toSend.contains)
     analyzeStarted ++= toSend.map(_ -> System.currentTimeMillis()).toMap
   }
@@ -81,7 +83,7 @@ class AnalyzeWorker extends Actor {
       timeouted += id
       sendAnalyzePoints()
     }
-    case GetAnalyzeStatus => sender ! AnalyzeStatus(timeouted, analyzing.toSet, analyzeStarted)
+    case GetAnalyzeStatus => sender ! AnalyzeStatus(timeouted, analyzing.toSet, analyzeStarted, tries)
   }
 
   def startAnalyzeForExp(expName: Option[String]) {
@@ -110,7 +112,7 @@ case class PointTimeout(id: Timestamp)
 
 case object GetAnalyzeStatus
 
-case class AnalyzeStatus(timeouted: Set[Timestamp], analyzing: Set[Timestamp], analyzeStarted: Map[Timestamp, Long])
+case class AnalyzeStatus(timeouted: Set[Timestamp], analyzing: Set[Timestamp], analyzeStarted: Map[Timestamp, Long], tries: Map[Timestamp, Int])
 
 class PointTimeoutException extends RuntimeException
 

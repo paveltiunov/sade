@@ -132,7 +132,8 @@ class AnalyzeResult extends LiftView {
               "Pending"
             else
               ""
-          })
+          }),
+          textColumn("Analyze tries", i => status.tries(i._1.id).toString)
         )(items))(tableSeq)
       })
     }

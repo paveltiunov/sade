@@ -44,6 +44,8 @@ class Boot extends PrimitiveTypeMode {
 
   def boot() {
     setupSqueryl()
+
+    LiftRules.htmlProperties.default.set((r: Req) => new XHtmlInHtml5OutProperties(r.userAgent))
     // where to search snippet
     LiftRules.addToPackages("org.sade")
 

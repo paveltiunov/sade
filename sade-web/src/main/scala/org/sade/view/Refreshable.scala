@@ -32,7 +32,7 @@ object Refreshable {
       {SHtml.a(() => {
         action()
         updateFun()
-      }, <i class={"icon-white " + iconClass}></i>, "class" -> ("btn btn-large " + btnClass))}
+      }, <i class={"icon-white " + iconClass}></i>, "class" -> ("btn " + btnClass))}
     </div>
   }
 
