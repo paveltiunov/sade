@@ -1,8 +1,7 @@
 package org.sade.view
 
 import scala.xml._
-import net.liftweb.http.js.jquery.JqJsCmds.{Show, Hide}
-import net.liftweb.http.js.{JsCmds, JsCmd}
+import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.http.js.JE.JsNull
@@ -13,7 +12,8 @@ import org.sade.servlet.SadeActors
 import akka.util.{Duration, Timeout}
 import java.util.concurrent.TimeUnit
 import TableRenderer._
-import net.liftweb.http.js.jquery.JqJsCmds
+import org.sade.worker._
+import org.sade.view.Refreshable._
 import org.sade.worker.GetAnalyzeState
 import net.liftweb.http.js.jquery.JqJE.JqId
 import org.sade.worker.StopExp
@@ -25,7 +25,8 @@ import net.liftweb.http.js.JsCmds.SetHtml
 import net.liftweb.http.js.jquery.JqJsCmds.JqOnLoad
 import org.sade.worker.StartExp
 import net.liftweb.http.js.jquery.JqJsCmds.JqSetHtml
-import org.sade.view.Refreshable._
+import akka.pattern.ask
+import akka.dispatch.Await
 
 class AnalyzeResult extends LiftView {
   def dispatch = {
@@ -75,25 +76,45 @@ class AnalyzeResult extends LiftView {
           loadImageCmd
         }) &
         "#dataMode *" #> pills(
-          "#pointMap *" bindToPill ("Point map", "#result-image [src]" #> imageUrl),
-          "#pointTable *" bindToPill ("Point table", table(expName))
+          "#pointMap *" bindToPill("Point map", "#result-image [src]" #> imageUrl),
+          "#pointTable *" bindToPill("Point table", table(expName))
         )
     <lift:surround with="default" at="content">
       {binding(template) ++ head}
     </lift:surround>
   }
 
+  case object CurrentlyAnalyzing
+
+  case object Timeouted
+
+  case object Pending
+
+  def analyzeStatusFilter = comboBoxFilter(".filter", Seq(
+    CurrentlyAnalyzing -> "Currently analyzing",
+    Timeouted -> "Timeouted",
+    Pending -> "Pending"
+  ))
+
   def table(expName: String): NodeSeq => NodeSeq = {
-
     val selectedPointIds = scala.collection.mutable.Set[Timestamp]()
-    refreshable(updateCmd => ns => {
-      val tableSeq = SadeDB.analyzeResultAndTokenStatus(expName).toSeq
+    filtering(".filtered", analyzeStatusFilter) {
+      case Seq(analyzeStatusFilter) => refreshable(updateCmd => {
+        implicit val timeout = Timeout(5 seconds)
+        val status = Await.result((SadeActors.mainWorker ? GetAnalyzeStatus).mapTo[AnalyzeStatus], Duration(5, TimeUnit.SECONDS))
+        var tableSeq = SadeDB.analyzeResultAndTokenStatus(expName).toSeq
+        tableSeq = analyzeStatusFilter.map {
+          case CurrentlyAnalyzing => tableSeq.filter(i => status.analyzeStarted.contains(i._1.id))
+          case Timeouted => tableSeq.filter(i => status.timeouted.contains(i._1.id))
+          case Pending => tableSeq.filter(i => status.analyzing.contains(i._1.id))
+        }.getOrElse(tableSeq)
 
-      actionToolbar(
-        action("icon-refresh", "btn-warning", () => SadeDB.dropAnalyze(selectedPointIds.toSet)),
-        action("icon-trash", "btn-danger", () => SadeDB.dropPoints(selectedPointIds.toSet))
-      )(updateCmd) ++
-        renderTable[(Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])](
+        type Item = (Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])
+
+        paging[Item](".paging", items => ".toolbar *" #> actionToolbar(
+          action("icon-refresh", "btn-warning", () => SadeDB.dropAnalyze(selectedPointIds.toSet)),
+          action("icon-trash", "btn-danger", () => SadeDB.dropPoints(selectedPointIds.toSet))
+        )(updateCmd) & ".tableContent" #> renderTable[Item](
           multiSelectColumn[(Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken]), Timestamp](selectedPointIds, _._1.id, tableSeq, updateCmd()),
           textColumn("Time", _._1.id.toString),
           textColumn("Point Index", _._1.pointIndex.toString),
@@ -102,14 +123,22 @@ class AnalyzeResult extends LiftView {
           textColumn("Value", _._2.map(_.meanValue.toString).getOrElse("")),
           textColumn("Absolute error", _._2.map(_.absoluteError.toString).getOrElse("")),
           textColumn("Frequency", _._2.map(_.meanFrequency.toString).getOrElse("")),
-          textColumn("Analyze started", _._3.map(_.analyzeStarted.toString).getOrElse(""))
-        )(tableSeq)
-    })
+          textColumn("Elapsed analyze time", i => {
+            if (status.timeouted.contains(i._1.id))
+              "Timeouted"
+            else if (status.analyzeStarted.contains(i._1.id))
+              "%s s".format((System.currentTimeMillis() - status.analyzeStarted(i._1.id)) / (1000))
+            else if (status.analyzing.contains(i._1.id))
+              "Pending"
+            else
+              ""
+          })
+        )(items))(tableSeq)
+      })
+    }
+
   }
 
-
-  import akka.pattern.ask
-  import akka.dispatch.Await
 
   def startButton(expName: String): Elem = {
     implicit val timeout = Timeout(5 seconds)

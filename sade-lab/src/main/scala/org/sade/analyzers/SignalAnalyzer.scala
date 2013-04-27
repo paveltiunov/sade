@@ -5,8 +5,8 @@ import scala.collection.JavaConversions._
 import scala.math._
 import org.apache.commons.math.stat.StatUtils
 
-class SignalAnalyzer(inputStream: InputStream, statusListener: Option[Float => Unit] = None) extends Analyzer {
-  val analyzer = new JacobiAngerAnalyzer
+class SignalAnalyzer(inputStream: InputStream, statusListener: Option[Float => Unit] = None, timeoutTime: Option[Long] = None) extends Analyzer {
+  val analyzer = timeoutTime.map(t => new JacobiAngerAnalyzer(t)).getOrElse(new JacobiAngerAnalyzer())
   val floatReader = new FloatReader(inputStream, statusListener)
   val analyzeResults = estimateParameters.toArray
 

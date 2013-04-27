@@ -32,6 +32,7 @@ class MainWorker extends Actor {
       }
     }
     case GetAnalyzeState(expName) => sender ! AnalyzeState(expToCancellable.contains(expName))
+    case m @ GetAnalyzeStatus => analyzeWorker forward(m)
   }
 }
 

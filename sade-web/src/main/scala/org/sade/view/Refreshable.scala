@@ -10,6 +10,7 @@ import scala.Null
 import net.liftweb.http.js.jquery.JqJsCmds.{JqSetHtml, Hide, Show}
 import net.liftweb.util.BindHelpers._
 import net.liftweb.util.CssSel
+import net.liftweb.common.Box
 
 object Refreshable {
   def refreshable(renderFun: (() => JsCmd) => (NodeSeq) => NodeSeq, id: String = UUID.randomUUID().toString, initialRender: Boolean = true): NodeSeq => NodeSeq = {
@@ -23,9 +24,7 @@ object Refreshable {
   }
 
   def actionToolbar(actions: ((() => JsCmd) => NodeSeq)*)(updateFun: () => JsCmd): NodeSeq = {
-    <div class="btn-toolbar">
-      {actions.map(_(updateFun))}
-    </div>
+    actions.map(_(updateFun)).flatten
   }
 
   def action(iconClass: String, btnClass: String, action: () => Unit): ((() => JsCmd) => NodeSeq) = {
@@ -74,5 +73,26 @@ object Refreshable {
       })(pillTemplate)
       pills ++ containers
     }
+  }
+
+  def comboBoxFilter[T](selector: String, options: Seq[(T, String)], default: Option[T] = None): (Option[Any] => JsCmd) => (NodeSeq => NodeSeq) = updateValue => {
+    selector #> SHtml.ajaxSelectObj[Option[T]](Seq(None -> "") ++ options.map{case (key, value) => Option(key) -> value}, Box(Option(default)), updateValue)
+  }
+
+  def filtering(filteredSelector: String, filters: ((Option[Any] => JsCmd) => (NodeSeq => NodeSeq))*)(filteringValue: Seq[Option[Any]] => NodeSeq => NodeSeq): NodeSeq => NodeSeq = {
+    var indexToValue = Map[Int, Option[Any]]().withDefault(i => None)
+    val filterToIndex = filters.zipWithIndex
+    var updCmd: () => JsCmd = null //TODO
+    val filteredBind = filteredSelector #> refreshable(
+      updateCmd => {
+        updCmd = updateCmd
+        filteringValue((0 until filters.size).map(indexToValue))
+      }
+    )
+    val filterBind = filterToIndex.map {case (filter, index) => "*" #> filter(value => {
+      indexToValue += index -> value
+      updCmd()
+    })}.reduceLeft(_ & _)
+    filterBind & filteredBind
   }
 }

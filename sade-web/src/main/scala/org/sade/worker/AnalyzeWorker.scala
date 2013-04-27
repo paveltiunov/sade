@@ -1,6 +1,6 @@
 package org.sade.worker
 
-import org.sade.analyzers.{SignalAnalyzer, AnalyzerFactory}
+import org.sade.analyzers.{AnalyzeTimeoutException, SignalAnalyzer, AnalyzerFactory}
 import org.squeryl.PrimitiveTypeMode._
 import java.io.{InputStream, ByteArrayInputStream}
 import java.util.Date
@@ -81,6 +81,7 @@ class AnalyzeWorker extends Actor {
       timeouted += id
       sendAnalyzePoints()
     }
+    case GetAnalyzeStatus => sender ! AnalyzeStatus(timeouted, analyzing.toSet, analyzeStarted)
   }
 
   def startAnalyzeForExp(expName: Option[String]) {
@@ -107,6 +108,10 @@ case class CommitResult(result: AnalyzeResult)
 
 case class PointTimeout(id: Timestamp)
 
+case object GetAnalyzeStatus
+
+case class AnalyzeStatus(timeouted: Set[Timestamp], analyzing: Set[Timestamp], analyzeStarted: Map[Timestamp, Long])
+
 class PointTimeoutException extends RuntimeException
 
 class SinglePointAnalyzer extends Actor {
@@ -121,14 +126,16 @@ class SinglePointAnalyzer extends Actor {
       val timeMillis = System.currentTimeMillis()
       logger.info("Start work on point timed at: " + id)
       val content = inTransaction(Point.unzippedContentBy(id))
-      val analyzer = new SignalAnalyzer(new ByteArrayInputStream(content), Some(f => {
-        if (System.currentTimeMillis() - timeMillis > 1000 * 300) {
+      try {
+        val analyzer = new SignalAnalyzer(new ByteArrayInputStream(content), timeoutTime = Some(System.currentTimeMillis() + 1000 * 300))
+        sender ! CommitResult(AnalyzeResult(id, analyzer.meanValue, analyzer.absoluteError, analyzer.meanFrequency))
+        logger.info("Finished work on point timed at: " + id + ", elapsed time: " + (System.currentTimeMillis() - timeMillis) + "ms")
+      } catch {
+        case e: AnalyzeTimeoutException => {
           sender ! PointTimeout(id)
           throw new PointTimeoutException
         }
-      }))
-      sender ! CommitResult(AnalyzeResult(id, analyzer.meanValue, analyzer.absoluteError, analyzer.meanFrequency))
-      logger.info("Finished work on point timed at: " + id + ", elapsed time: " + (System.currentTimeMillis() - timeMillis) + "ms")
+      }
     }
   }
 }

@@ -20,6 +20,15 @@ public class JacobiAngerAnalyzer
     private static final int omegaSlices = 4;
     private static final int phaseSlices = 4;
     private final List<MinimizeParameters> scanParameters = scanParameters();
+    private final long timeoutTime;
+
+    public JacobiAngerAnalyzer(long timeoutTime) {
+        this.timeoutTime = timeoutTime;
+    }
+
+    public JacobiAngerAnalyzer() {
+        this.timeoutTime = -1;
+    }
 
     public MinimizeResult AnalyzeSample(double[] sample, double omega, double delta, double phi)
     {
@@ -28,6 +37,9 @@ public class JacobiAngerAnalyzer
 
     private AnalyzeResultWithAmplitude AnalyzeSample(double[] sample, MinimizeParameters minimizeParameters, double realPeriod)
     {
+        if (timeoutTime > 0 && System.currentTimeMillis() > timeoutTime) {
+            throw new AnalyzeTimeoutException();
+        }
         ReScaleResult reScaleResult = ReScale(sample);
         Complex[] firstCoeff = GetFirstCoefficients(reScaleResult.values, realPeriod);
         MinimizeResult result = new MinimizeResult(0, minimizeParameters);

@@ -7,6 +7,7 @@ import net.liftweb.http.SHtml
 import scala.Predef._
 import scala.xml.Text
 import net.liftweb.http.js.{JsCmd, JsCmds}
+import net.liftweb.util.CssSel
 
 object TableRenderer {
   def template =
@@ -36,6 +37,30 @@ object TableRenderer {
           )
       )
     tableBind(template)
+  }
+
+  def pagingTemplate =
+    <span class="pull-right">
+      <span class="btn-group">
+        <a class="btn page-left"><i class="icon-chevron-left"></i></a>
+        <a class="btn page-right"><i class="icon-chevron-right"></i></a>
+      </span>
+    </span>
+
+  def paging[T](selector: String, renderFun: Seq[T] => CssSel, pageSize: Int = 100)(items: Seq[T]): NodeSeq => NodeSeq = {
+    var currentPage = 0
+    val pageCount = if (items.size % pageSize == 0) items.size / pageSize else items.size / pageSize + 1
+    Refreshable.refreshable(updateCmd => {
+      val pageBinds = ".page-left" #> (if (currentPage > 0) SHtml.a(() => {
+        currentPage -= 1
+        updateCmd()
+      }, <i class="icon-chevron-left"></i>) else <a class="disabled"><i class="icon-chevron-left"></i></a>) &
+        ".page-right" #> (if (currentPage < pageCount - 1) SHtml.a(() => {
+          currentPage += 1
+          updateCmd()
+        }, <i class="icon-chevron-right"></i>)else <a class="disabled"><i class="icon-chevron-right"></i></a>)
+      selector #> pageBinds(pagingTemplate) & renderFun(items.drop(currentPage * pageSize).take(pageSize))
+    })
   }
 
   def textColumn[T](name: String, valueFun: T => String): (NodeSeq, T => NodeSeq) = {
