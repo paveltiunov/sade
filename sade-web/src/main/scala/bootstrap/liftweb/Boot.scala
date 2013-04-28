@@ -6,7 +6,7 @@ import _root_.net.liftweb.http._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
 import Helpers._
-import org.sade.view.{AnalyzeResultImageView, AllPointIdView}
+import org.sade.view.{SourcePointDownloadView, AnalyzeResultImageView, AllPointIdView}
 import org.slf4j.LoggerFactory
 import org.squeryl.{Session, SessionFactory, PrimitiveTypeMode}
 import javax.naming.InitialContext
@@ -67,6 +67,7 @@ class Boot extends PrimitiveTypeMode {
 
     LiftRules.dispatch.prepend {
       case Req("loaded-point-ids" :: Nil, _, _) => new AllPointIdView().dispatch _
+      case Req("point-source" :: pointId :: Nil, _, _) => () => new SourcePointDownloadView().dispatch(pointId.toLong)
     }
     LiftRules.dispatch.prepend(new AnalyzeResultImageView().dispatch)
   }

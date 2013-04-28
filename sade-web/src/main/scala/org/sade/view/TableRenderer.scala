@@ -67,6 +67,10 @@ object TableRenderer {
     (Text(name), valueFun.andThen(Text))
   }
 
+  def downloadLinkColumn[T](name: String, linkFun: T => String): (NodeSeq, T => NodeSeq) = {
+    (Text(name), linkFun.andThen(s => <a class="btn btn-success" href={s}><i class="icon-white icon-download"></i></a>))
+  }
+
   def multiSelectColumn[T,I](selectedIds: mutable.Set[I], idFun: T => I, items: Seq[T], tableUpdateCmd: => JsCmd): (NodeSeq, T => NodeSeq) = {
     (SHtml.ajaxCheckbox(selectedIds.size == items.size, v => {
       if (v) selectedIds ++= items.map(idFun) else selectedIds.clear()
