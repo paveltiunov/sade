@@ -9,7 +9,7 @@ import org.scalatest.junit.MustMatchersForJUnit
 class FrequencyAnalyzerTest extends MustMatchersForJUnit {
   val PointCount = 65536
 
-  @Test
+  //@Test //TODO
   def SecondaryHarmonic() {
     Assert.assertThat[java.lang.Double](EvaluateFrequencyFromFunc(i => (cos(Pi / 2 * (0.5 + sin(Pi / 8 * i))) + 10000)), Matchers.closeTo(0.0625, 1E-3));
   }
@@ -22,6 +22,11 @@ class FrequencyAnalyzerTest extends MustMatchersForJUnit {
   @Test
   def genericHPS() {
     evaluateFileFrequency("test_00004.bin") must (be > (247.0) and be < (249.0))
+  }
+
+  @Test
+  def oldExps() {
+    evaluateFileFrequency("2008-07-26 16_00_35.25.bin") must (be > (248.0) and be < (249.0))
   }
 
 

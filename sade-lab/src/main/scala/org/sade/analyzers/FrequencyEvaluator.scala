@@ -34,8 +34,10 @@ object FrequencyEvaluator {
   }
 
   private def firstHarmonicFrequency(amplitudes: Array[FrequencyEvaluator.Amplitude]) = {
+    val maxAmplitude = amplitudes.map(_.amp).max
     val sortedByAmp = amplitudes.sortBy(_.amp).reverse
-    sortedByAmp.head.frequency
+    val sortedByFreq = sortedByAmp.takeWhile(a => log(a.amp / maxAmplitude) > -1).sortBy(_.frequency)
+    sortedByFreq.head.frequency
   }
 
   case class Amplitude(amp: Double, frequency: Double)
