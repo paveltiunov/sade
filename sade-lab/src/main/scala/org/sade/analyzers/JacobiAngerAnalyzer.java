@@ -41,6 +41,7 @@ public class JacobiAngerAnalyzer
             throw new AnalyzeTimeoutException();
         }
         ReScaleResult reScaleResult = ReScale(sample);
+        logger.debug("Period: " + realPeriod);
         Complex[] firstCoeff = GetFirstCoefficients(reScaleResult.values, realPeriod);
         MinimizeResult result = new MinimizeResult(0, minimizeParameters);
         result = MinimizeErrorFunction(result.getParameters(), Arrays.copyOf(firstCoeff, FourierCoeffCount));
@@ -235,18 +236,6 @@ public class JacobiAngerAnalyzer
         }
     }
 
-}
-
-class ReScaleResult {
-    public final double[] values;
-    public final double amplitude;
-    public final double center;
-
-    ReScaleResult(double[] values, double amplitude, double center) {
-        this.values = values;
-        this.amplitude = amplitude;
-        this.center = center;
-    }
 }
 
 class AnalyzeResultWithAmplitude {

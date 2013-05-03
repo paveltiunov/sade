@@ -5,14 +5,22 @@ import scala.math._
 
 object FrequencyEvaluator {
   def evaluateFrequency(truncData: Array[Double]) = {
-    val transformer = new FastFourierTransformer
-    val spectrum = transformer.transform(truncData).map(_.abs())
-    val range = 1 until 6
-    val spectralDensities = range.map(factor => downSample(spectrum, factor))
-    val transform = harmonicProduct(spectralDensities)
+    val transform = harmonicProductSpectrum(truncData)
 
     val amplitudes = transform.zipWithIndex.map(t => Amplitude(t._1, t._2 * 1.0 / truncData.length))
     firstHarmonicFrequency(amplitudes.drop(1))
+  }
+
+  def harmonicProductSpectrum(truncData: Array[Double]) = {
+    val spectrum = powerDensity(truncData)
+    val range = 1 until 6
+    val spectralDensities = range.map(factor => downSample(spectrum, factor))
+    harmonicProduct(spectralDensities)
+  }
+
+  def powerDensity(truncData: Array[Double]) = {
+    val transformer = new FastFourierTransformer
+    transformer.transform(truncData).map(_.abs())
   }
 
   private def downSample(sample: Array[Double], factor: Int): Array[Double] = {
@@ -22,14 +30,12 @@ object FrequencyEvaluator {
 
   private def harmonicProduct(spectralDensities: Traversable[Array[Double]]): Array[Double] = {
     val minLength = spectralDensities.map(_.length).min
-    (0 until minLength).map(i => spectralDensities.map(_(i)).product).toArray
+    (0 until minLength).map(i => spectralDensities.map(_(i)).sum).toArray
   }
 
   private def firstHarmonicFrequency(amplitudes: Array[FrequencyEvaluator.Amplitude]) = {
-    val maxAmplitude = amplitudes.map(_.amp).max
     val sortedByAmp = amplitudes.sortBy(_.amp).reverse
-    val sortedByFreq = sortedByAmp.takeWhile(a => log(a.amp / maxAmplitude) > -1).sortBy(_.frequency)
-    sortedByFreq.last.frequency
+    sortedByAmp.head.frequency
   }
 
   case class Amplitude(amp: Double, frequency: Double)

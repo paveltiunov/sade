@@ -127,6 +127,12 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
             addLinePlot("Filtered", filteredSample)
           }
         })
+        pages += new Page("HPS", new BindTriggerPlot2DPanel(RangeModel.sampleFile) {
+          def updatePlots() {
+            addLinePlot("Original spectrum", spectrum)
+            addLinePlot("HPS", harmonicProductSpectrum)
+          }
+        })
       }, BorderPanel.Position.Center)
     }
   }
@@ -195,13 +201,31 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
 
   def prepareSample: Array[Double] = {
     RangeModel.sampleFile.valueOption.map(f => {
-      val stream = new FileInputStream(f)
-      val reader = new FloatReader(stream)
-      val sample = reader.chunkArrayStream.head.map(_.toDouble)
+      val sample: Array[Double] = sampleFromFile(f)
       val period = JacobiAngerAnalyzer.ScanPeriod(sample)
-      stream.close()
       JacobiAngerAnalyzer.ReScale(sample.take(period.toInt)).values
     }).getOrElse(TestSample.prepareSample(1, omegaDefault, math.Pi * 2 / 512.0, phiDefault, deltaDefault, 0, 512))
+  }
+
+
+  def sampleFromFile(f: File): Array[Double] = {
+    val stream = new FileInputStream(f)
+    val reader = new FloatReader(stream)
+    val v = reader.chunkArrayStream.head.map(_.toDouble)
+    stream.close()
+    v
+  }
+
+  def logSpectrum(size: Int)(a: Array[Double]): Seq[(Double, Double)] = {
+    (0 until a.size).map(i => i * 100000.0 / size).zip(a.take(1000).map(math.log10))
+  }
+
+  def spectrum = {
+    RangeModel.sampleFile.valueOption.map(sampleFromFile).map(FrequencyEvaluator.powerDensity).map(logSpectrum(32768)).getOrElse(Nil)
+  }
+
+  def harmonicProductSpectrum = {
+    RangeModel.sampleFile.valueOption.map(sampleFromFile).map(FrequencyEvaluator.harmonicProductSpectrum).map(logSpectrum(32768)).getOrElse(Nil)
   }
 
   def analyzeResultSample: Array[Double] = {
