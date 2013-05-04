@@ -8,7 +8,7 @@ object FrequencyEvaluator {
     val transform = harmonicProductSpectrum(truncData)
 
     val amplitudes = transform.zipWithIndex.map(t => Amplitude(t._1, t._2 * 1.0 / truncData.length))
-    firstHarmonicFrequency(amplitudes.drop(1))
+    firstHarmonicFrequency(truncData, amplitudes.drop(1))
   }
 
   def harmonicProductSpectrum(truncData: Array[Double]) = {
@@ -33,11 +33,19 @@ object FrequencyEvaluator {
     (0 until minLength).map(i => spectralDensities.map(_(i)).sum).toArray
   }
 
-  private def firstHarmonicFrequency(amplitudes: Array[FrequencyEvaluator.Amplitude]) = {
+  private def firstHarmonicFrequency(truncData: Array[Double], amplitudes: Array[FrequencyEvaluator.Amplitude]) = {
     val maxAmplitude = amplitudes.map(_.amp).max
     val sortedByAmp = amplitudes.sortBy(_.amp).reverse
     val sortedByFreq = sortedByAmp.takeWhile(a => log(a.amp / maxAmplitude) > -1).sortBy(_.frequency)
-    sortedByFreq.head.frequency
+    val ampToAutoCorrelation = sortedByFreq.map(a => a -> autoCorrelation(a.frequency)(truncData))
+    ampToAutoCorrelation.maxBy(_._2)._1.frequency
+  }
+
+  private def autoCorrelation(frequency: Double)(truncData: Array[Double]) = {
+    val window = truncData.size / 8
+    val firstWindow = truncData.take(window)
+    val secondWindow = truncData.drop(scala.math.round(1 / frequency.toFloat)).take(window)
+    firstWindow.zip(secondWindow).map(v => v._1 * v._2).sum
   }
 
   case class Amplitude(amp: Double, frequency: Double)

@@ -12,6 +12,8 @@ import scala.math
 import java.io.{FileInputStream, File}
 import javax.swing.filechooser.FileNameExtensionFilter
 import org.apache.commons.math.complex.Complex
+import scala.math._
+import scala.util.Random
 
 
 object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFeel {
@@ -127,7 +129,7 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
             addLinePlot("Filtered", filteredSample)
           }
         })
-        pages += new Page("HPS", new BindTriggerPlot2DPanel(RangeModel.sampleFile) {
+        pages += new Page("HPS", new BindTriggerPlot2DPanel(fromFields :_*) { //TODO: hack
           def updatePlots() {
             addLinePlot("Original spectrum", spectrum)
             addLinePlot("HPS", harmonicProductSpectrum)
@@ -216,16 +218,25 @@ object AnalyzerResearchMain extends SimpleSwingApplication with NimbusLookAndFee
     v
   }
 
+  def defaultSample: Array[Double] = {
+    val omega = 2.5
+    val phi = 0.7
+    val delta = 1.5
+    TestSample.prepareSample(omega, omega, math.Pi * 2 / 200, phi, delta, 2, 32768)
+  }
+
   def logSpectrum(size: Int)(a: Array[Double]): Seq[(Double, Double)] = {
     (0 until a.size).map(i => i * 100000.0 / size).zip(a.take(1000).map(math.log10))
   }
 
+  def spectrumSample = RangeModel.sampleFile.valueOption.map(sampleFromFile).getOrElse(defaultSample)
+
   def spectrum = {
-    RangeModel.sampleFile.valueOption.map(sampleFromFile).map(FrequencyEvaluator.powerDensity).map(logSpectrum(32768)).getOrElse(Nil)
+    (FrequencyEvaluator.powerDensity _).andThen(logSpectrum(32768)).apply(spectrumSample)
   }
 
   def harmonicProductSpectrum = {
-    RangeModel.sampleFile.valueOption.map(sampleFromFile).map(FrequencyEvaluator.harmonicProductSpectrum).map(logSpectrum(32768)).getOrElse(Nil)
+    (FrequencyEvaluator.harmonicProductSpectrum _).andThen(logSpectrum(32768)).apply(spectrumSample)
   }
 
   def analyzeResultSample: Array[Double] = {

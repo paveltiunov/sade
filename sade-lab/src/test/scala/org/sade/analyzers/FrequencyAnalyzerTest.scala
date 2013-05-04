@@ -5,13 +5,14 @@ import org.junit.{Assert, Test}
 import org.hamcrest.Matchers
 import scala.math._
 import org.scalatest.junit.MustMatchersForJUnit
+import scala.util.Random
 
 class FrequencyAnalyzerTest extends MustMatchersForJUnit {
   val PointCount = 65536
 
-  //@Test //TODO
+  @Test
   def SecondaryHarmonic() {
-    Assert.assertThat[java.lang.Double](EvaluateFrequencyFromFunc(i => (cos(Pi / 2 * (0.5 + sin(Pi / 8 * i))) + 10000)), Matchers.closeTo(0.0625, 1E-3));
+    Assert.assertThat[java.lang.Double](EvaluateFrequencyFromFunc(i => (cos(Pi / 2 * (0.5 + sin(Pi / 800 * i))) + 10000)), Matchers.closeTo(6.256E-4, 1E-6))
   }
 
   @Test

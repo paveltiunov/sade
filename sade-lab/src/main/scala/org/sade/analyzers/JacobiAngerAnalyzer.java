@@ -214,7 +214,7 @@ public class JacobiAngerAnalyzer
         return minResult;
     }
 
-    private static double SearchPeriod(double[] sample, double from, double to, int iterations)
+    public static double SearchPeriod(double[] sample, double from, double to, int iterations)
     {
         double[] twoPeriods = take(sample, (int) (Math.round(from) * 2));
         Complex[] first = FFT.transform(take(twoPeriods, (int) Math.round(from)), 2, 1.0);
