@@ -48,7 +48,7 @@ public class JacobiAngerAnalyzerTest
         double delta = 1.5;
         double[] sample = PrepeareSample(omega, omega, Math.PI * 2 / 200, phi, delta, 2, 20000);
         List<AnalyzeResult> parameters = new ArrayList<AnalyzeResult>();
-        final int chunkSize = 1024;
+        final int chunkSize = 8192;
         long now = System.currentTimeMillis();
         for (double[] chunkSample = sample; chunkSample.length > 0; chunkSample = JacobiAngerAnalyzer.skip(chunkSample, chunkSize))
         {

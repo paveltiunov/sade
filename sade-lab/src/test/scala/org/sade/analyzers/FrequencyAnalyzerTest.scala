@@ -16,6 +16,11 @@ class FrequencyAnalyzerTest extends MustMatchersForJUnit {
   }
 
   @Test
+  def SecondaryHarmonic2() {
+    Assert.assertThat[java.lang.Double](EvaluateFrequencyFromFunc(i => (2.5 * cos(2.5 * (1.5 + cos(2 * Pi / 200 * i + 0.7))) + 2)), Matchers.closeTo(0.005, 1E-3))
+  }
+
+  @Test
   def highHarmonicsHPS() {
     evaluateFileFrequency("120hz.bin") must be < (130.0)
   }
@@ -23,6 +28,21 @@ class FrequencyAnalyzerTest extends MustMatchersForJUnit {
   @Test
   def genericHPS() {
     evaluateFileFrequency("test_00004.bin") must (be > (247.0) and be < (249.0))
+  }
+
+  @Test
+  def newExps() {
+    evaluateFileFrequency("2010-03-27 12_00_50.0.bin") must (be > (199.0) and be < (215.0))
+  }
+
+  @Test
+  def newExps2() {
+    evaluateFileFrequency("2010-03-27 11_27_46.0.bin") must (be > (199.0) and be < (215.0))
+  }
+
+  @Test
+  def newExps3() {
+    evaluateFileFrequency("2010-03-27 11_48_12.0.bin") must (be > (199.0) and be < (215.0))
   }
 
   @Test
