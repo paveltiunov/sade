@@ -228,7 +228,7 @@ public class JacobiAngerAnalyzer
             double center = (from + to) / 2.0f;
             double periodDiff = Math.abs(center - period);
             if (periodDiff < 1E-2 || iterations > 1000)
-                return period;
+                return Math.max(period, 20);
             else
                 return SearchPeriod(sample, center - periodDiff, center + periodDiff, iterations + 1);
         } else {
