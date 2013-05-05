@@ -114,6 +114,7 @@ public class JacobiAngerAnalyzer
                 searchPeriod = searchPeriodInInterval(sample, searchPeriod);
                 AnalyzeResult analyzeResult = analyzeNextByPrevious(sampleToAnalyze, searchPeriod);
                 if (isOverErrorThreshold(analyzeResult)) {
+                    searchPeriod = ScanPeriod(sample);
                     lastAnalyzeResult = rescanAnalyze(searchPeriod, sampleToAnalyze);
                 } else {
                     lastAnalyzeResult = analyzeResult;
