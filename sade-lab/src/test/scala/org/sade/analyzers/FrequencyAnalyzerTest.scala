@@ -50,6 +50,10 @@ class FrequencyAnalyzerTest extends MustMatchersForJUnit {
     evaluateFileFrequency("2008-07-26 16_00_35.25.bin") must (be > (248.0) and be < (249.0))
   }
 
+  @Test
+  def oldExps2() {
+    evaluateFileFrequency("2008-07-26 16_06_33.125.bin") must (be > (248.0) and be < (249.0))
+  }
 
   def evaluateFileFrequency(fixtureFile: String): Double = {
     val clazz = getClass

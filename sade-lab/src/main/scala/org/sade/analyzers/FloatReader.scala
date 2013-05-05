@@ -7,7 +7,7 @@ class FloatReader(inputStream: InputStream, statusListener: Option[Float => Unit
   val streamSize = inputStream.available()
   val stream = new BufferedInputStream(inputStream)
   val buffered: Buffer[Float] = Buffer()
-  val chunkSize = 32768
+  val chunkSize = 65536
 
   def chunkStream: Stream[Float] = readNext.map(b => Stream.cons(b, chunkStream)).getOrElse(Stream.empty)
 
