@@ -217,14 +217,7 @@ public class JacobiAngerAnalyzer
 
     public static double SearchPeriod(double[] sample, double from, double to, int iterations)
     {
-        double[] twoPeriods = take(sample, (int) (Math.round(from) * 2));
-        Complex[] first = FFT.transform(take(twoPeriods, (int) Math.round(from)), 2, 1.0);
-        Complex[] second = FFT.transform(skip(twoPeriods, (int) Math.round(from)), 2, 1.0);
-        double phaseDiff = first[1].getArgument() - second[1].getArgument();
-        phaseDiff = (Math.abs(phaseDiff) % (Math.PI * 2)) * Math.signum(phaseDiff);
-        if (phaseDiff < -Math.PI) phaseDiff += Math.PI * 2;
-        if (phaseDiff > Math.PI) phaseDiff -= Math.PI * 2;
-        double period = (from + (phaseDiff / (2 * Math.PI) * from));
+        double period = refinePeriod(sample, from);
         if (period >= from && period <= to) {
             double center = (from + to) / 2.0f;
             double periodDiff = Math.abs(center - period);
@@ -235,6 +228,17 @@ public class JacobiAngerAnalyzer
         } else {
             return Math.min(Math.max(period, from), to);
         }
+    }
+
+    public static double refinePeriod(double[] sample, double center) {
+        double[] twoPeriods = take(sample, (int) (Math.round(center) * 2));
+        Complex[] first = FFT.transform(take(twoPeriods, (int) Math.round(center)), 2, 1.0);
+        Complex[] second = FFT.transform(skip(twoPeriods, (int) Math.round(center)), 2, 1.0);
+        double phaseDiff = first[1].getArgument() - second[1].getArgument();
+        phaseDiff = (Math.abs(phaseDiff) % (Math.PI * 2)) * Math.signum(phaseDiff);
+        if (phaseDiff < -Math.PI) phaseDiff += Math.PI * 2;
+        if (phaseDiff > Math.PI) phaseDiff -= Math.PI * 2;
+        return (center + (phaseDiff / (2 * Math.PI) * center));
     }
 
 }

@@ -2,6 +2,7 @@ package org.sade.analyzers
 
 import org.apache.commons.math.transform.FastFourierTransformer
 import scala.math._
+import scala.annotation.tailrec
 
 object FrequencyEvaluator {
   def evaluateFrequency(truncData: Array[Double]) = {
@@ -30,27 +31,27 @@ object FrequencyEvaluator {
 
   private def harmonicProduct(spectralDensities: Traversable[Array[Double]]): Array[Double] = {
     val minLength = spectralDensities.map(_.length).min
-    (0 until minLength).map(i => spectralDensities.map(_(i)).product).toArray
+    (0 until minLength).map(i => spectralDensities.map(_(i)).sum).toArray
   }
 
   private def firstHarmonicFrequency(truncData: Array[Double], amplitudes: Array[FrequencyEvaluator.Amplitude]) = {
     val maxAmplitude = amplitudes.map(_.amp).max
     val sortedByAmp = amplitudes.sortBy(_.amp).reverse
     val sortedByFreq = sortedByAmp.takeWhile(a => log(a.amp / maxAmplitude) > -1).sortBy(_.frequency)
-    val ampToSquaredSum = sortedByFreq.map(a =>
-      a -> (
-        elementSum(a.frequency, v => scala.math.pow(v._1 - v._2, 2))(truncData),
-        elementSum(a.frequency, v => v._1 * v._2)(truncData)
-        )
+    val ampToFrequency = sortedByFreq.map(a =>
+      a -> refineFrequency(truncData, a.frequency)
     )
-    ampToSquaredSum.maxBy(v => v._1.amp / v._2._1 * v._2._2)._1.frequency
+    ampToFrequency.minBy(v => scala.math.abs(v._2 - v._1.frequency))._2
   }
 
-  private def elementSum(frequency: Double, elementFun: ((Double, Double)) => Double)(truncData: Array[Double]) = {
-    val window = 1000
-    val firstWindow = truncData.take(window)
-    val secondWindow = truncData.drop(scala.math.round(1 / frequency.toFloat)).take(window)
-    firstWindow.zip(secondWindow).map(elementFun).sum
+  @tailrec
+  private def refineFrequency(sample: Array[Double], frequency: Double, iteration: Int = 0): Double = {
+    val period = (1 / frequency).toFloat
+    if (iteration >= 1000) {
+      frequency
+    } else {
+      refineFrequency(sample, 1.0 / JacobiAngerAnalyzer.refinePeriod(sample, period), iteration +1)
+    }
   }
 
   case class Amplitude(amp: Double, frequency: Double)
