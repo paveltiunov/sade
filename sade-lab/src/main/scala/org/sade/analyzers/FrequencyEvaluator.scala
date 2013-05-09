@@ -41,7 +41,7 @@ object FrequencyEvaluator {
     val ampToFrequency = sortedByFreq.map(a =>
       a -> refineFrequency(truncData, a.frequency)
     )
-    ampToFrequency.minBy(v => scala.math.abs(v._2 - v._1.frequency))._2
+    ampToFrequency.maxBy(v =>  v._1.amp / (scala.math.exp((scala.math.abs(v._2 - v._1.frequency) / v._1.frequency * 100 - 5)*10) + 1))._2
   }
 
   @tailrec
