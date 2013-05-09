@@ -27,6 +27,7 @@ import org.sade.worker.StartExp
 import net.liftweb.http.js.jquery.JqJsCmds.JqSetHtml
 import akka.pattern.ask
 import akka.dispatch.Await
+import org.sade.model
 
 class AnalyzeResult extends LiftView {
   def dispatch = {
@@ -98,8 +99,8 @@ class AnalyzeResult extends LiftView {
 
   def table(expName: String): NodeSeq => NodeSeq = {
     val selectedPointIds = scala.collection.mutable.Set[Timestamp]()
-    filtering(".filtered", analyzeStatusFilter) {
-      case Seq(analyzeStatusFilter) => refreshable(updateCmd => {
+    filtering(".filtered", analyzeStatusFilter, decimalFilter(".biggerThanFrequency"), decimalFilter(".lessThanFrequency"), decimalFilter(".biggerThanValue"), decimalFilter(".lessThanValue")) {
+      case Seq(analyzeStatusFilter, biggerThanFrequency: Option[Double], lessThanFrequency: Option[Double], biggerThanValue: Option[Double], lessThanValue: Option[Double]) => refreshable(updateCmd => {
         implicit val timeout = Timeout(5 seconds)
         val status = Await.result((SadeActors.mainWorker ? GetAnalyzeStatus).mapTo[AnalyzeStatus], Duration(5, TimeUnit.SECONDS))
         var tableSeq = SadeDB.analyzeResultAndTokenStatus(expName).toSeq
@@ -108,8 +109,14 @@ class AnalyzeResult extends LiftView {
           case Timeouted => tableSeq.filter(i => status.timeouted.contains(i._1.id))
           case Pending => tableSeq.filter(i => status.analyzing.contains(i._1.id))
         }.getOrElse(tableSeq)
-
         type Item = (Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])
+
+        def filterBy(items: Seq[Item], filterFun: (model.AnalyzeResult, Double) => Boolean, valueOption: Option[Double]) =
+          valueOption.map(v => items.filter(_._2.map(ar => filterFun(ar, v)).getOrElse(false))).getOrElse(items)
+        tableSeq = filterBy(tableSeq, _.meanFrequency < _, lessThanFrequency)
+        tableSeq = filterBy(tableSeq, _.meanFrequency > _, biggerThanFrequency)
+        tableSeq = filterBy(tableSeq, _.meanValue < _, lessThanValue)
+        tableSeq = filterBy(tableSeq, _.meanValue > _, biggerThanValue)
 
         paging[Item](".paging", items => ".toolbar *" #> actionToolbar(
           action("icon-refresh", "btn-warning", () => SadeDB.dropAnalyze(selectedPointIds.toSet)),

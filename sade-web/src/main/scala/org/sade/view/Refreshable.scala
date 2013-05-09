@@ -75,11 +75,24 @@ object Refreshable {
     }
   }
 
-  def comboBoxFilter[T](selector: String, options: Seq[(T, String)], default: Option[T] = None): (Option[Any] => JsCmd) => (NodeSeq => NodeSeq) = updateValue => {
+  type Filter = (Option[Any] => JsCmd) => (NodeSeq => NodeSeq)
+
+  def comboBoxFilter[T](selector: String, options: Seq[(T, String)], default: Option[T] = None): Filter = updateValue => {
     selector #> SHtml.ajaxSelectObj[Option[T]](Seq(None -> "") ++ options.map{case (key, value) => Option(key) -> value}, Box(Option(default)), updateValue)
   }
 
-  def filtering(filteredSelector: String, filters: ((Option[Any] => JsCmd) => (NodeSeq => NodeSeq))*)(filteringValue: Seq[Option[Any]] => NodeSeq => NodeSeq): NodeSeq => NodeSeq = {
+  def decimalFilter(selector: String): Filter = updateValue => {
+    selector #> SHtml.ajaxText("", value => {
+      val decimalOption = try {
+        Option(value.toDouble)
+      } catch {
+        case e: NumberFormatException => None
+      }
+      updateValue(decimalOption)
+    })
+  }
+
+  def filtering(filteredSelector: String, filters: Filter*)(filteringValue: Seq[Option[Any]] => NodeSeq => NodeSeq): NodeSeq => NodeSeq = {
     var indexToValue = Map[Int, Option[Any]]().withDefault(i => None)
     val filterToIndex = filters.zipWithIndex
     var updCmd: () => JsCmd = null //TODO
