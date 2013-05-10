@@ -20,10 +20,10 @@ object SadeDB extends Schema with PrimitiveTypeMode {
 
   def contentByPoint(pointId: Timestamp) = pointContents.lookup(pointId).get
 
-  def skyMapPoints(expName: String): Iterable[SkyMapPoint] = from(points, analyzeResults) ((content, result) => {
+  def skyMapPoints(expName: String, channelFun: AnalyzeResult => Double = _.meanValue): Iterable[SkyMapPoint] = from(points, analyzeResults) ((content, result) => {
     where((content.id === result.id) and (content.expName === expName)) select ((content, result))
   }).map {
-    case (content, result) => SkyMapPoint(content.coordinates, 0, result.meanValue)
+    case (content, result) => SkyMapPoint(content.coordinates, 0, channelFun(result))
   }
 
   implicit def traversableOfTimestamp2ListTimestamp(l: Traversable[Timestamp]) =

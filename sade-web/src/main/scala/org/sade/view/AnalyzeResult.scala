@@ -35,22 +35,28 @@ class AnalyzeResult extends LiftView {
   }
 
   var viewMode = "plane"
+  var channel = "value"
   var logarithm = false
   var meanFilter = false
 
-  def flagParameter(flag: Boolean, paramName: String): String = {
+  def parameterString(params: (String, String)*) = params.map(v => v._1 + "=" + v._2).mkString("&")
+
+  def flagParameter(flag: Boolean, paramName: String): Seq[(String, String)] = {
     (if (flag) {
-      "&" + paramName + "=true"
-    } else "")
+      Seq(paramName -> "true")
+    } else Nil)
   }
 
   def render(expName: String) = {
     val template = TemplateFinder.findAnyTemplate(List("templates-hidden", "analyze-result")).open_!
     def imageUrl = {
       "/analyze-result-image/" + expName + "?" +
-        AnalyzeResultImageView.modeParam + "=" + viewMode +
-        flagParameter(logarithm, AnalyzeResultImageView.logarithmParam) +
-        flagParameter(meanFilter, AnalyzeResultImageView.meanFilterParam)
+        parameterString(
+          Seq(AnalyzeResultImageView.modeParam -> viewMode) ++
+          Seq(AnalyzeResultImageView.channel -> channel) ++
+          flagParameter(logarithm, AnalyzeResultImageView.logarithmParam) ++
+          flagParameter(meanFilter, AnalyzeResultImageView.meanFilterParam) :_*
+        )
     }
     def loadImageCmd = JqId("result-image") ~> JqAttr("src", imageUrl) & SetHtml("statistics", <div>
       {statistics(expName)}
@@ -66,6 +72,10 @@ class AnalyzeResult extends LiftView {
         "#start-button *" #> startButton(expName) &
         "#mode-selector *" #> SHtml.ajaxSelect(Seq("plane" -> "Plane", "galactic" -> "Galactic"), Full("plane"), v => {
           viewMode = v
+          loadImageCmd
+        }) &
+        "#channel-selector *" #> SHtml.ajaxSelect(Seq("value" -> "Value", "frequency" -> "Frequency"), Full("value"), v => {
+          channel = v
           loadImageCmd
         }) &
         "#logarithm-selector *" #> SHtml.ajaxCheckbox(false, v => {
