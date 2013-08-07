@@ -7,7 +7,7 @@
     <name>sade</name>
     <groupId>org.sade</groupId>
     <artifactId>sade</artifactId>
-    <version>1.2</version>
+    <version>1.3-SNAPSHOT</version>
 
     <properties>
         <scala.version>2.9.2</scala.version>
@@ -133,7 +133,7 @@
 
     <scm>
         <connection>scm:git:git://git@github.com:paveltiunov/sade.git</connection>
-      <tag>sade-1.2</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <build>
