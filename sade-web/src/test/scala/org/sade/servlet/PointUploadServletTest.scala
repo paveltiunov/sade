@@ -14,7 +14,7 @@ class PointUploadServletTest extends StubWebServerRunner with MustMatchersForJUn
 
   def createPointSource(date: Date) = {
     PointSource(
-      MeasuredPointCoordinates(date, 1, 2, 3, Directions.Backward), "foo", () => {
+      MeasuredPointCoordinates(date, 1, 2, 3, Directions.Backward), "foo", "channel0", () => {
         bytes
       }
     )
@@ -28,7 +28,7 @@ class PointUploadServletTest extends StubWebServerRunner with MustMatchersForJUn
     uploader.uploadPoint(pointSource) must be(false)
     uploader.loadedIds must have size (1)
 
-    uploader.loadedIds ++= Set(new Date(123))
+    uploader.loadedIds ++= Set(new Date(123) -> "channel0")
     uploader.uploadPoint(createPointSource(new Date(123))) must be (false)
 
     val actualBytes = inTransaction {

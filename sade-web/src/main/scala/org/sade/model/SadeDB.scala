@@ -8,6 +8,7 @@ import annotation.tailrec
 import java.util.zip.GZIPInputStream
 import java.io.{DataInputStream, ByteArrayInputStream}
 import org.squeryl.dsl.ast.{RightHandSideOfIn, ConstantExpressionNodeList}
+import org.squeryl.dsl.CompositeKey2
 
 object SadeDB extends Schema with PrimitiveTypeMode {
   val points = table[Point]()
@@ -16,12 +17,10 @@ object SadeDB extends Schema with PrimitiveTypeMode {
 
   val analyzeResults = table[AnalyzeResult]()
 
-  val analyzeTokens = table[AnalyzeToken]()
+  def contentByPoint(pointId: PointKeyed.Key) = pointContents.lookup(pointId).get
 
-  def contentByPoint(pointId: Timestamp) = pointContents.lookup(pointId).get
-
-  def skyMapPoints(expName: String, channelFun: AnalyzeResult => Double = _.meanValue): Iterable[SkyMapPoint] = from(points, analyzeResults) ((content, result) => {
-    where((content.id === result.id) and (content.expName === expName)) select ((content, result))
+  def skyMapPoints(expName: String, channelFun: AnalyzeResult => Double = _.meanValue, channelId: String = "channel0"): Iterable[SkyMapPoint] = from(points, analyzeResults) ((content, result) => {  //TODO
+    where((content.timestamp === result.timestamp and content.channelId === channelId and result.channelId === channelId) and (content.expName === expName)) select ((content, result))
   }).map {
     case (content, result) => SkyMapPoint(content.coordinates, 0, channelFun(result))
   }
@@ -29,44 +28,47 @@ object SadeDB extends Schema with PrimitiveTypeMode {
   implicit def traversableOfTimestamp2ListTimestamp(l: Traversable[Timestamp]) =
     new RightHandSideOfIn[Timestamp](new ConstantExpressionNodeList[Timestamp](l))
 
-  def dropPoints(ids: Set[Timestamp]) {
+  def inIdSet(ids: Set[PointKeyed.Key])(p: PointKeyed) =
+    (p.timestamp in (ids.map(_.a1))) and (p.channelId in (ids.map(_.a2)))
+
+  def dropPoints(ids: Set[PointKeyed.Key]) {
     inTransaction {
       dropAnalyze(ids)
-      pointContents.deleteWhere(_.id in (ids))
-      points.deleteWhere(_.id in (ids))
+      pointContents.deleteWhere(inIdSet(ids))
+      points.deleteWhere(inIdSet(ids))
     }
   }
 
-  def dropAnalyze(ids: Set[Timestamp]) {
+  def dropAnalyze(ids: Set[PointKeyed.Key]) {
     inTransaction {
-      analyzeTokens.deleteWhere(_.id in (ids))
-      analyzeResults.deleteWhere(_.id in (ids))
+      analyzeResults.deleteWhere(inIdSet(ids))
     }
   }
 
-  def analyzeResultAndTokenStatus(expName: String): Iterable[(Point, Option[AnalyzeResult], Option[AnalyzeToken])] = join(points, analyzeResults.leftOuter, analyzeTokens.leftOuter) ((content, result, token) => {
-    where(content.expName === expName) select ((content, result, token)) on(content.id === result.get.id, token.get.id === content.id)
+  def analyzeResultAndTokenStatus(expName: String): Iterable[(Point, Option[AnalyzeResult])] = join(points, analyzeResults.leftOuter) ((content, result) => {
+    where(content.expName === expName) select ((content, result)) on(content.id === result.get.id)
   })
 
   def experiments = from(points) (p => groupBy(p.expName)).map(_.key)
 
-  def pointCount(expName: String) = from(points) (p => where(p.expName === expName) compute(count(p.id))).head.measures
+  def pointCount(expName: String) = from(points) (p => where(p.expName === expName) compute(count())).head.measures
 
-  def analyzeResultCount(expName: String) = from(points, analyzeResults) ((p,r) => where((p.id === r.id) and (p.expName === expName)) compute(count(r.id))).head.measures
+  def analyzeResultCount(expName: String) = from(points, analyzeResults) ((p,r) => where((p.id === r.id) and (p.expName === expName)) compute(count())).head.measures
 }
 
 case class Point(
-                         id: Timestamp,
+                         timestamp: Timestamp,
+                         channelId: String,
                          expName: String,
                          pointIndex: Int,
                          pointCount: Int,
                          dirIndex: Int,
                          direction: Directions.Direction
-                         ) extends KeyedEntity[Timestamp] {
-  def this() = this (null, null, 0, 0, 0, Directions.Forward)
+                         ) extends PointKeyed {
+  def this() = this (null, null, null, 0, 0, 0, Directions.Forward)
 
   def coordinates = MeasuredPointCoordinates(
-    id,
+    timestamp,
     pointIndex,
     pointCount,
     dirIndex,
@@ -78,30 +80,32 @@ case class Point(
   }
 }
 
-case class PointContent(id: Timestamp, content: Array[Byte]) extends KeyedEntity[Timestamp]
+case class PointContent(timestamp: Timestamp, channelId: String, content: Array[Byte]) extends PointKeyed
 
 case class AnalyzeResult(
-                          id: Timestamp,
+                          timestamp: Timestamp,
+                          channelId: String,
                           meanValue: Double,
                           absoluteError: Double,
                           meanFrequency: Double
-                          ) extends KeyedEntity[Timestamp] {
-  def this() = this(null, 0, 0, 0)
+                          ) extends PointKeyed {
+  def this() = this(null, null, 0, 0, 0)
 }
 
-case class AnalyzeToken(
-                          id: Timestamp,
-                          analyzeStarted: Timestamp
-                         ) extends KeyedEntity[Timestamp] {
-  def this() = this(null, null)
+object AnalyzeResult {
+  def apply(id: PointKeyed.Key,
+            meanValue: Double,
+            absoluteError: Double,
+            meanFrequency: Double
+             ): AnalyzeResult = AnalyzeResult(id.a1, id.a2, meanValue, absoluteError, meanFrequency)
 }
 
 object Point {
-  def apply(coordinate: MeasuredPointCoordinates, expName: String): Point = {
-    Point(new Timestamp(coordinate.time.getTime), expName, coordinate.pointIndex, coordinate.pointCount, coordinate.dirIndex, coordinate.direction)
+  def apply(coordinate: MeasuredPointCoordinates, expName: String, channelId: String): Point = {
+    Point(new Timestamp(coordinate.time.getTime), channelId, expName, coordinate.pointIndex, coordinate.pointCount, coordinate.dirIndex, coordinate.direction)
   }
 
-  def unzippedContentBy(pointId: Timestamp): Array[Byte] = {
+  def unzippedContentBy(pointId: PointKeyed.Key): Array[Byte] = {
     val content = SadeDB.contentByPoint(pointId).content
     val inputStream = new ByteArrayInputStream(content)
     if ((inputStream.read() | inputStream.read() << 8) == GZIPInputStream.GZIP_MAGIC)
@@ -123,4 +127,16 @@ object Point {
     readStream()
     outputStream.toByteArray
   }
+}
+
+trait PointKeyed extends KeyedEntity[CompositeKey2[Timestamp, String]] {
+
+  def timestamp: Timestamp
+  def channelId: String
+
+  def id = new CompositeKey2(timestamp, channelId)
+}
+
+object PointKeyed {
+  type Key = CompositeKey2[Timestamp, String]
 }

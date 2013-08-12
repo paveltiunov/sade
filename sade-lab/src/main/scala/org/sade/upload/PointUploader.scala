@@ -18,7 +18,7 @@ class PointUploader(serverUrl: String) {
     httpClient
   }
 
-  var loadedIds: Set[Date] = Set()
+  var loadedIds: Set[(Date, String)] = Set()
 
   private def gzippedContent(point: PointSource): Array[Byte] = {
     val outputStream = new ByteArrayOutputStream()
@@ -29,10 +29,11 @@ class PointUploader(serverUrl: String) {
   }
 
   def uploadPoint(point: PointSource) = {
-    if (!loadedIds.contains(point.coordinate.time)) {
+    if (!loadedIds.contains(point.coordinate.time -> point.channelId)) {
       val method = new PostMethod(serverUrl + "/upload-point")
       MeasuredPointCoordinates.toMap(point.coordinate).foreach(t => method.setRequestHeader(t._1, t._2))
       method.setRequestHeader("expName", point.expName)
+      method.setRequestHeader("channelId", point.channelId)
       val fileName = point.coordinate.time.toString
       val entity = new MultipartRequestEntity(Array(
         new FilePart(fileName, new ByteArrayPartSource(fileName, gzippedContent(point)))
@@ -51,7 +52,7 @@ class PointUploader(serverUrl: String) {
     if (httpClient.executeMethod(method) == 200) {
       val loadedXml = XML.load(method.getResponseBodyAsStream)
       val pointIds = loadedXml \ "pointId"
-      loadedIds ++= pointIds.map(_.text.toLong).map(new Date(_))
+      loadedIds ++= pointIds.map(p => new Date((p \ "timestamp").text.toLong) -> (p \ "channelId").text)
     }
   }
 }

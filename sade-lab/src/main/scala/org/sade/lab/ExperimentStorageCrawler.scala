@@ -5,15 +5,19 @@ import org.sade.starcoords.{Directions, MeasuredPointCoordinates}
 import java.io.{FileInputStream, File}
 
 object ExperimentStorageCrawler {
+  val fileNameRegExp = "test_(\\d+)\\.txt\\.(.+?)\\.bin".r
   def crawl(directory: VirtualDirectory): Stream[PointSource] = {
     directory.directories.toStream.flatMap(indexDir => {
       indexDir.directories.toStream.flatMap(directionDir => {
-        val pointFiles = directionDir.files.toStream.filter(f => f.name.startsWith("test_") && f.name.endsWith(".txt"))
+        val pointFiles = directionDir.files.toStream.filter(f => fileNameRegExp.pattern.matcher(f.name).matches())
         pointFiles.map(f => {
+          val (pointIndex, channelId) = f.name match {
+            case fileNameRegExp(pointIndex, channelId) => pointIndex -> channelId
+          }
           PointSource(
             MeasuredPointCoordinates(
               f.time,
-              f.name.replace("test_", "").replace(".txt", "").toInt,
+              pointIndex.toInt,
               pointFiles.size,
               indexDir.name.toInt,
               directionDir.name.toLowerCase match {
@@ -21,6 +25,7 @@ object ExperimentStorageCrawler {
                 case "backward" => Directions.Backward
               }),
             directory.name,
+            channelId,
             f.content _
           )
         })
@@ -30,7 +35,7 @@ object ExperimentStorageCrawler {
 
 }
 
-case class PointSource(coordinate: MeasuredPointCoordinates, expName: String, content: () => Array[Byte])
+case class PointSource(coordinate: MeasuredPointCoordinates, expName: String, channelId: String, content: () => Array[Byte])
 
 trait VirtualFile {
   def content: Array[Byte]

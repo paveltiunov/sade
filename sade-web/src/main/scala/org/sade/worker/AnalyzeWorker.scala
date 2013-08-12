@@ -3,12 +3,11 @@ package org.sade.worker
 import org.sade.analyzers.{AnalyzeTimeoutException, SignalAnalyzer, AnalyzerFactory}
 import org.squeryl.PrimitiveTypeMode._
 import java.io.{InputStream, ByteArrayInputStream}
-import java.util.Date
 import java.sql.Timestamp
 import org.slf4j.LoggerFactory
-import org.sade.model.{Point, AnalyzeToken, AnalyzeResult, SadeDB}
-import akka.actor.{Address, OneForOneStrategy, Props, Actor}
-import akka.routing.{RoundRobinRouter, RemoteRouterConfig, SmallestMailboxRouter}
+import org.sade.model.{PointKeyed, Point, AnalyzeResult, SadeDB}
+import akka.actor.{Address, Props, Actor}
+import akka.routing.{RoundRobinRouter, RemoteRouterConfig}
 
 class AnalyzeWorker extends Actor {
   val logger = LoggerFactory.getLogger(getClass)
@@ -25,12 +24,12 @@ class AnalyzeWorker extends Actor {
     ).toList
   }
 
-  var timeouted = Set[Timestamp]()
-  var analyzing = Seq[Timestamp]()
+  var timeouted = Set[PointKeyed.Key]()
+  var analyzing = Seq[PointKeyed.Key]()
   var currentHosts = Set[RegisterHost]()
   var analyzer = createAnalyzer
-  var analyzeStarted = Map[Timestamp, Long]()
-  var tries = Map[Timestamp, Int]().withDefault(_ => 0)
+  var analyzeStarted = Map[PointKeyed.Key, Long]()
+  var tries = Map[PointKeyed.Key, Int]().withDefault(_ => 0)
 
   private def createAnalyzer = {
     if (currentHosts.isEmpty) {
@@ -104,15 +103,15 @@ case class StopExp(expName: String)
 
 case class UpdateHosts(hosts: Set[RegisterHost])
 
-case class AnalyzePoint(id: Timestamp)
+case class AnalyzePoint(id: PointKeyed.Key)
 
 case class CommitResult(result: AnalyzeResult)
 
-case class PointTimeout(id: Timestamp)
+case class PointTimeout(id: PointKeyed.Key)
 
 case object GetAnalyzeStatus
 
-case class AnalyzeStatus(timeouted: Set[Timestamp], analyzing: Set[Timestamp], analyzeStarted: Map[Timestamp, Long], tries: Map[Timestamp, Int])
+case class AnalyzeStatus(timeouted: Set[PointKeyed.Key], analyzing: Set[PointKeyed.Key], analyzeStarted: Map[PointKeyed.Key, Long], tries: Map[PointKeyed.Key, Int])
 
 class PointTimeoutException extends RuntimeException
 
@@ -124,7 +123,7 @@ class SinglePointAnalyzer extends Actor {
   val logger = LoggerFactory.getLogger(getClass)
 
   protected def receive = {
-    case AnalyzePoint(id: Timestamp) => {
+    case AnalyzePoint(id: PointKeyed.Key) => {
       val timeMillis = System.currentTimeMillis()
       logger.info("Start work on point timed at: " + id)
       val content = inTransaction(Point.unzippedContentBy(id))

@@ -1,0 +1,58 @@
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <changeSet id="add-channel" author="pavel.tiunov">
+        <dropTable tableName="AnalyzeToken"/>
+        <renameColumn tableName="Point" oldColumnName="id" newColumnName="timestamp"/>
+        <addNotNullConstraint tableName="Point" columnName="timestamp" columnDataType="java.sql.Types.TIMESTAMP"/>
+        <renameColumn tableName="PointContent" oldColumnName="id" newColumnName="timestamp"/>
+        <renameColumn tableName="AnalyzeResult" oldColumnName="id" newColumnName="timestamp"/>
+
+        <addColumn tableName="Point">
+            <column name="channelId" type="varchar(4000)"/>
+        </addColumn>
+        <update tableName="Point">
+            <column name="channelId" value="channel0"/>
+        </update>
+        <addNotNullConstraint tableName="Point" columnName="channelId" columnDataType="varchar(4000)"/>
+        <addPrimaryKey tableName="Point" columnNames="timestamp, channelId"/>
+        <!--<addUniqueConstraint tableName="Point" columnNames="timestamp, channelId"/>-->
+
+
+        <addColumn tableName="PointContent">
+            <column name="channelId" type="varchar(4000)"/>
+        </addColumn>
+        <update tableName="PointContent">
+            <column name="channelId" value="channel0"/>
+        </update>
+        <addNotNullConstraint tableName="PointContent" columnName="channelId" columnDataType="varchar(4000)"/>
+        <dropForeignKeyConstraint baseTableName="PointContent" constraintName="PointContent_FK"/>
+        <dropPrimaryKey tableName="PointContent"/>
+        <addPrimaryKey tableName="PointContent" columnNames="timestamp, channelId"/>
+        <!--<addUniqueConstraint tableName="PointContent" columnNames="timestamp, channelId"/>-->
+
+
+        <addColumn tableName="AnalyzeResult">
+            <column name="channelId" type="varchar(4000)"/>
+        </addColumn>
+        <update tableName="AnalyzeResult">
+            <column name="channelId" value="channel0"/>
+        </update>
+        <addNotNullConstraint tableName="AnalyzeResult" columnName="channelId" columnDataType="varchar(4000)"/>
+        <dropForeignKeyConstraint baseTableName="AnalyzeResult" constraintName="AnalyzeResult_FK"/>
+        <dropPrimaryKey tableName="AnalyzeResult"/>
+        <addPrimaryKey tableName="AnalyzeResult" columnNames="timestamp, channelId"/>
+        <!--<addUniqueConstraint tableName="AnalyzeResult" columnNames="timestamp, channelId"/>-->
+
+        <addForeignKeyConstraint baseTableName="PointContent" baseColumnNames="timestamp, channelId" constraintName="PointContent_FK"
+                                 referencedTableName="Point"
+                                 referencedColumnNames="timestamp, channelId"/>
+
+        <addForeignKeyConstraint baseTableName="AnalyzeResult" baseColumnNames="timestamp, channelId" constraintName="AnalyzeResult_FK"
+                                 referencedTableName="Point"
+                                 referencedColumnNames="timestamp, channelId"/>
+    </changeSet>
+</databaseChangeLog>

@@ -1,13 +1,8 @@
 package org.sade.worker
 
-import org.mockito.Mockito
-import org.sade.analyzers.AnalyzerFactory
 import org.squeryl.PrimitiveTypeMode
 import org.scalatest.junit.MustMatchersForJUnit
-import java.sql.Timestamp
-import org.junit.Test
-import org.sade.model.{AnalyzeToken, SadeDB, MemoryDBTest}
-import java.util.Date
+import org.sade.model.MemoryDBTest
 import org.sade.Fixtures
 
 

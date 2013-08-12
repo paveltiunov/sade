@@ -5,7 +5,7 @@ import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import net.liftweb.http.js.JsCmds._
 import net.liftweb.http.js.JE.JsNull
-import org.sade.model.{Point, SadeDB}
+import org.sade.model.{PointKeyed, Point, SadeDB}
 import net.liftweb.http.{LiftView, TemplateFinder, SHtml}
 import java.sql.Timestamp
 import org.sade.servlet.SadeActors
@@ -18,7 +18,6 @@ import org.sade.worker.GetAnalyzeState
 import net.liftweb.http.js.jquery.JqJE.JqId
 import org.sade.worker.StopExp
 import net.liftweb.common.Full
-import org.sade.model.AnalyzeToken
 import org.sade.worker.AnalyzeState
 import net.liftweb.http.js.jquery.JqJE.JqAttr
 import net.liftweb.http.js.JsCmds.SetHtml
@@ -108,7 +107,7 @@ class AnalyzeResult extends LiftView {
   ))
 
   def table(expName: String): NodeSeq => NodeSeq = {
-    val selectedPointIds = scala.collection.mutable.Set[Timestamp]()
+    val selectedPointIds = scala.collection.mutable.Set[PointKeyed.Key]()
     filtering(".filtered", analyzeStatusFilter, decimalFilter(".biggerThanFrequency"), decimalFilter(".lessThanFrequency"), decimalFilter(".biggerThanValue"), decimalFilter(".lessThanValue")) {
       case Seq(analyzeStatusFilter, biggerThanFrequency: Option[Double], lessThanFrequency: Option[Double], biggerThanValue: Option[Double], lessThanValue: Option[Double]) => refreshable(updateCmd => {
         implicit val timeout = Timeout(5 seconds)
@@ -119,7 +118,7 @@ class AnalyzeResult extends LiftView {
           case Timeouted => tableSeq.filter(i => status.timeouted.contains(i._1.id))
           case Pending => tableSeq.filter(i => status.analyzing.contains(i._1.id))
         }.getOrElse(tableSeq)
-        type Item = (Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken])
+        type Item = (Point, Option[org.sade.model.AnalyzeResult])
 
         def filterBy(items: Seq[Item], filterFun: (model.AnalyzeResult, Double) => Boolean, valueOption: Option[Double]) =
           valueOption.map(v => items.filter(_._2.map(ar => filterFun(ar, v)).getOrElse(false))).getOrElse(items)
@@ -132,7 +131,7 @@ class AnalyzeResult extends LiftView {
           action("icon-refresh", "btn-warning", () => SadeDB.dropAnalyze(selectedPointIds.toSet)),
           action("icon-trash", "btn-danger", () => SadeDB.dropPoints(selectedPointIds.toSet))
         )(updateCmd) & ".tableContent" #> renderTable[Item](
-          multiSelectColumn[(Point, Option[org.sade.model.AnalyzeResult], Option[AnalyzeToken]), Timestamp](selectedPointIds, _._1.id, tableSeq, updateCmd()),
+          multiSelectColumn[(Point, Option[org.sade.model.AnalyzeResult]), PointKeyed.Key](selectedPointIds, _._1.id, tableSeq, updateCmd()),
           textColumn("Time", _._1.id.toString),
           textColumn("Point Index", _._1.pointIndex.toString),
           textColumn("Dir index", _._1.dirIndex.toString),
@@ -151,7 +150,7 @@ class AnalyzeResult extends LiftView {
               ""
           }),
           textColumn("Analyze tries", i => status.tries(i._1.id).toString),
-          downloadLinkColumn("Source", i => "/point-source/%s".format(i._1.id.getTime))
+          downloadLinkColumn("Source", i => "/point-source/%s/%s".format(i._1.id.a1.getTime, i._1.id.a2))
         )(items))(tableSeq)
       })
     }

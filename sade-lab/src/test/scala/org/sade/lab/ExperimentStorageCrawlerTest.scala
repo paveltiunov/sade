@@ -9,19 +9,20 @@ import org.sade.starcoords.{Directions, MeasuredPointCoordinates}
 class ExperimentStorageCrawlerTest extends MustMatchersForJUnit {
   @Test
   def gutter() {
-    ExperimentStorageCrawler.crawl(
+    val pointSource: PointSource = ExperimentStorageCrawler.crawl(
       StubDir("exp", Seq(
         StubDir(
           "00000",
           Seq(
             StubDir(
               "backward", Nil,
-              Seq(StubFile("test_00001.txt", "foo".getBytes, new Date(123)))
+              Seq(StubFile("test_00001.txt.channel0.bin", "foo".getBytes, new Date(123)))
             )
           )
         )
-      ))).head.coordinate must be(MeasuredPointCoordinates(new Date(123), 1, 1, 0, Directions.Backward))
-
+      ))).head
+    pointSource.coordinate must be(MeasuredPointCoordinates(new Date(123), 1, 1, 0, Directions.Backward))
+    pointSource.channelId must be("channel0")
   }
 
   case class StubDir(name: String, directories: Seq[StubDir], files: Seq[StubFile] = Nil) extends VirtualDirectory

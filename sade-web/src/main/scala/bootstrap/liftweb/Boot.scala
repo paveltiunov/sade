@@ -67,7 +67,7 @@ class Boot extends PrimitiveTypeMode {
 
     LiftRules.dispatch.prepend {
       case Req("loaded-point-ids" :: Nil, _, _) => new AllPointIdView().dispatch _
-      case Req("point-source" :: pointId :: Nil, _, _) => () => new SourcePointDownloadView().dispatch(pointId.toLong)
+      case Req("point-source" :: pointId :: channelId :: Nil, _, _) => () => new SourcePointDownloadView().dispatch(pointId.toLong, channelId)
     }
     LiftRules.dispatch.prepend(new AnalyzeResultImageView().dispatch)
   }
