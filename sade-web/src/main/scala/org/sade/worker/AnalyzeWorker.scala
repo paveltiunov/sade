@@ -29,7 +29,7 @@ class AnalyzeWorker extends Actor {
   var currentHosts = Set[RegisterHost]()
   var analyzer = createAnalyzer
   var analyzeStarted = Map[PointKeyed.Key, Long]()
-  var tries = Map[PointKeyed.Key, Int]().withDefault(_ => 0)
+  var tries = Map[PointKeyed.Key, Int]()
 
   private def createAnalyzer = {
     if (currentHosts.isEmpty) {
@@ -47,7 +47,7 @@ class AnalyzeWorker extends Actor {
     inTransaction {
       toSend.foreach(id => analyzer ! AnalyzePoint(id, Point.unzippedContentBy(id)))
     }
-    toSend.foreach(id => tries += id -> (tries(id) + 1))
+    toSend.foreach(id => tries += id -> (tries.getOrElse(id, 0) + 1))
     analyzing = analyzing.filterNot(toSend.contains)
     analyzeStarted ++= toSend.map(_ -> System.currentTimeMillis()).toMap
   }

@@ -149,7 +149,7 @@ class AnalyzeResult extends LiftView {
             else
               ""
           }),
-          textColumn("Analyze tries", i => status.tries(i._1.id).toString),
+          textColumn("Analyze tries", i => status.tries.getOrElse(i._1.id, 0).toString),
           downloadLinkColumn("Source", i => "/point-source/%s/%s".format(i._1.id.a1.getTime, i._1.id.a2))
         )(items))(tableSeq)
       })
