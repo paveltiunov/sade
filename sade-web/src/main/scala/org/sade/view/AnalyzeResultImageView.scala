@@ -24,10 +24,11 @@ class AnalyzeResultImageView extends PrimitiveTypeMode {
     val width = 640
     val height = 480
     val bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    val deltaChannel = S.param(AnalyzeResultImageView.deltaChannel).openOr("channel0")
     var points = S.param(channel).map {
-      case "value" => SadeDB.skyMapPoints(expName).toSeq
-      case "frequency" => SadeDB.skyMapPoints(expName, _.meanFrequency).toSeq
-    }.openOr(SadeDB.skyMapPoints(expName).toSeq)
+      case "value" => SadeDB.skyMapPoints(expName, channelId = deltaChannel).toSeq
+      case "frequency" => SadeDB.skyMapPoints(expName, _.meanFrequency, channelId = deltaChannel).toSeq
+    }.openOr(SadeDB.skyMapPoints(expName, channelId = deltaChannel).toSeq)
     points = filterByFlag(meanFilterParam, SkyMapFilter.averageFilter, points)
     points = filterByFlag(logarithmParam, SkyMapFilter.logarithmFilter, points)
     StarCoordsPainter(points, S.param(modeParam).map {
@@ -45,4 +46,5 @@ object AnalyzeResultImageView {
   val logarithmParam = "logarithm"
   val modeParam = "mode"
   val channel = "channel"
+  val deltaChannel = "delta-channel"
 }

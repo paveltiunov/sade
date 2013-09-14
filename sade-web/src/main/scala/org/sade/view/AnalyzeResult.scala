@@ -35,6 +35,7 @@ class AnalyzeResult extends LiftView {
 
   var viewMode = "plane"
   var channel = "value"
+  var deltaChannel = "channel0"
   var logarithm = false
   var meanFilter = false
 
@@ -53,6 +54,7 @@ class AnalyzeResult extends LiftView {
         parameterString(
           Seq(AnalyzeResultImageView.modeParam -> viewMode) ++
           Seq(AnalyzeResultImageView.channel -> channel) ++
+          Seq(AnalyzeResultImageView.deltaChannel -> deltaChannel) ++
           flagParameter(logarithm, AnalyzeResultImageView.logarithmParam) ++
           flagParameter(meanFilter, AnalyzeResultImageView.meanFilterParam) :_*
         )
@@ -75,6 +77,10 @@ class AnalyzeResult extends LiftView {
         }) &
         "#channel-selector *" #> SHtml.ajaxSelect(Seq("value" -> "Value", "frequency" -> "Frequency"), Full("value"), v => {
           channel = v
+          loadImageCmd
+        }) &
+        "#delta-channel-selector *" #> SHtml.ajaxSelect((0 until 4).map(i => "channel%s".format(i) -> "Channel %s".format(i)), Full("channel0"), v => {
+          deltaChannel = v
           loadImageCmd
         }) &
         "#logarithm-selector *" #> SHtml.ajaxCheckbox(false, v => {

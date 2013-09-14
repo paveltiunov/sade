@@ -22,6 +22,8 @@ object WorkerInitServlet {
   var disableWorker: Boolean = System.getProperty("disableWorker", "false").toBoolean
 
   var akkaPort: Int = System.getProperty("akka.port", "2552").toInt
+
+  var akkaMaster: Option[String] = Option(System.getProperty("akka.master"))
 }
 
 object SadeActors {
@@ -43,10 +45,8 @@ object SadeActors {
     """.stripMargin.format(InetAddress.getLocalHost.getHostAddress, WorkerInitServlet.akkaPort))
   val system = ActorSystem("sade", config)
   val mainWorker = {
-    if (WorkerInitServlet.disableWorker) {
-      system.actorOf(Props[MainWorker], "mainWorker")
-    } else {
-      system.actorFor(RootActorPath(AddressFromURIString(System.getProperty("akka.master", "akka://sade@%s:2552".format(InetAddress.getLocalHost.getHostAddress)))) / "user" / "mainWorker")
-    }
+    WorkerInitServlet.akkaMaster.map(master =>
+      system.actorFor(RootActorPath(AddressFromURIString(master)) / "user" / "mainWorker")
+    ).getOrElse(system.actorOf(Props[MainWorker], "mainWorker"))
   }
 }
