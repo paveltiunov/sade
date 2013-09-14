@@ -15,6 +15,8 @@ import org.squeryl.adapters.H2Adapter
 import liquibase.Liquibase
 import liquibase.resource.ClassLoaderResourceAccessor
 import liquibase.database.jvm.JdbcConnection
+import liquibase.lockservice.{DatabaseChangeLogLock, LockService}
+import java.util.Date
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -24,11 +26,16 @@ class Boot extends PrimitiveTypeMode {
   val logger = LoggerFactory.getLogger(getClass)
 
   def installSchema() {
-    new Liquibase(
+    val liquibase: Liquibase = new Liquibase(
       "install-scripts/all.xml",
       new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader),
       new JdbcConnection(dataSourceConnection)
-    ).update(null)
+    )
+    val locks = LockService.getInstance(liquibase.getDatabase).listLocks()
+
+    if (locks.forall(l => new Date().getTime - l.getLockGranted.getTime > 60 * 5 * 1000))
+      liquibase.forceReleaseLocks()
+    liquibase.update(null)
   }
 
   def dataSourceConnection = {

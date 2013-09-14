@@ -11,12 +11,17 @@ trait BindField[T] {
     val newValue = Option(value)
     if (fieldValue != newValue) {
       fieldValue = newValue
-      SwingUtilities.invokeLater(new Runnable {
-        def run() {
-          listeners.foreach(_(fieldValue))
-        }
-      })
+      notifyListeners()
     }
+  }
+
+
+  private def notifyListeners() {
+    SwingUtilities.invokeLater(new Runnable {
+      def run() {
+        listeners.foreach(_(fieldValue))
+      }
+    })
   }
 
   def value:T = fieldValue.getOrElse(null.asInstanceOf[T])
@@ -26,6 +31,7 @@ trait BindField[T] {
 
   def +=(listener: Option[T] => Unit) {
     listeners = listeners :+ listener
+    notifyListeners()
   }
 
   def -=(listener: Option[T] => Unit) {

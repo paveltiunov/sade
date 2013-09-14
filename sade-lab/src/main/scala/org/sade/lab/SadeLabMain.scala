@@ -8,7 +8,7 @@ import swing.BorderPanel.Position
 import javax.swing.filechooser.FileNameExtensionFilter
 import scala.concurrent.ops._
 import java.io.{File, FileInputStream}
-import org.sade.binding.{BindProgressBar, BindPlotPanel, BindLabel, BindField}
+import org.sade.binding._
 import actors.threadpool.AtomicInteger
 import concurrent.JavaConversions
 import java.util.concurrent.Executors
@@ -16,6 +16,10 @@ import swing.FileChooser.SelectionMode
 import ui.{AnalyzeDirectoryForm, UploaderForm, AnalyzeForm}
 
 object SadeLabMain extends SimpleSwingApplication with NimbusLookAndFeel {
+  object pathField extends BindField[String]
+
+  pathField.value = "http://localhost:8080"
+
   def top = new MainFrame {
     size = new Dimension(800, 600)
     title = "SADE Lab"
@@ -50,14 +54,14 @@ object SadeLabMain extends SimpleSwingApplication with NimbusLookAndFeel {
         chooser.fileSelectionMode = SelectionMode.DirectoriesOnly
         chooser.showOpenDialog(uploadExperimentDataButton) match {
           case FileChooser.Result.Approve => {
-            new UploaderForm(chooser.selectedFile, "http://localhost:8080").open()
+            new UploaderForm(chooser.selectedFile, pathField.value).open()
           }
           case _ =>
         }
       }
     })
     contents = new BoxPanel(Orientation.Vertical) {
-      contents ++= Seq(analyzeSinglePointButton, analyzeDirectoryButton, uploadExperimentDataButton)
+      contents ++= Seq(analyzeSinglePointButton, analyzeDirectoryButton, uploadExperimentDataButton, new BindTextField(pathField))
     }
   }
 }
