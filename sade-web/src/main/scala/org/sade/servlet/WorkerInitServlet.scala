@@ -36,6 +36,7 @@ object SadeActors {
       |    netty {
       |      hostname = "%s"
       |      port = %s
+      |      message-frame-size = 10 MiB
       |    }
       |  }
       |}

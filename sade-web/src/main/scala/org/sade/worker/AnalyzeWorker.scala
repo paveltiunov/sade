@@ -44,7 +44,9 @@ class AnalyzeWorker extends Actor {
     analyzeStarted = analyzeStarted.filterNot(kv => (System.currentTimeMillis() - kv._2) > 1000 * 600)
     val toSend = analyzing.take(workersNum - analyzeStarted.size)
     logger.info("Sending tasks: %s".format(toSend))
-    toSend.foreach(id => analyzer ! AnalyzePoint(id))
+    inTransaction {
+      toSend.foreach(id => analyzer ! AnalyzePoint(id, Point.unzippedContentBy(id)))
+    }
     toSend.foreach(id => tries += id -> (tries(id) + 1))
     analyzing = analyzing.filterNot(toSend.contains)
     analyzeStarted ++= toSend.map(_ -> System.currentTimeMillis()).toMap
@@ -103,7 +105,7 @@ case class StopExp(expName: String)
 
 case class UpdateHosts(hosts: Set[RegisterHost])
 
-case class AnalyzePoint(id: PointKeyed.Key)
+case class AnalyzePoint(id: PointKeyed.Key, content: Array[Byte])
 
 case class CommitResult(result: AnalyzeResult)
 
@@ -123,10 +125,9 @@ class SinglePointAnalyzer extends Actor {
   val logger = LoggerFactory.getLogger(getClass)
 
   protected def receive = {
-    case AnalyzePoint(id: PointKeyed.Key) => {
+    case AnalyzePoint(id, content) => {
       val timeMillis = System.currentTimeMillis()
       logger.info("Start work on point timed at: " + id)
-      val content = inTransaction(Point.unzippedContentBy(id))
       try {
         val analyzer = new SignalAnalyzer(new ByteArrayInputStream(content), timeoutTime = Some(System.currentTimeMillis() + 1000 * 300))
         sender ! CommitResult(AnalyzeResult(id, analyzer.meanValue, analyzer.absoluteError, analyzer.meanFrequency))
