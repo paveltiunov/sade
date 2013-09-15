@@ -11,14 +11,12 @@ object ExperimentStorageCrawler {
       indexDir.directories.toStream.flatMap(directionDir => {
         val pointFiles = directionDir.files.toStream.filter(f => fileNameRegExp.pattern.matcher(f.name).matches())
         pointFiles.map(f => {
-          val (pointIndex, channelId) = f.name match {
-            case fileNameRegExp(pointIndex, channelId) => pointIndex -> channelId
-          }
+          val (pointIndex, channelId) = pointIndexAndChannel(f)
           PointSource(
             MeasuredPointCoordinates(
               f.time,
               pointIndex.toInt,
-              pointFiles.size,
+              pointFiles.count(f => pointIndexAndChannel(f)._2 == channelId),
               indexDir.name.toInt,
               directionDir.name.toLowerCase match {
                 case "forward" => Directions.Forward
@@ -33,6 +31,12 @@ object ExperimentStorageCrawler {
     })
   }
 
+
+  def pointIndexAndChannel(f: VirtualFile): (String, String) = {
+    f.name match {
+      case fileNameRegExp(pointIndex, channelId) => pointIndex -> channelId
+    }
+  }
 }
 
 case class PointSource(coordinate: MeasuredPointCoordinates, expName: String, channelId: String, content: () => Array[Byte])
