@@ -50,14 +50,7 @@ class AnalyzeResult extends LiftView {
   def render(expName: String) = {
     val template = TemplateFinder.findAnyTemplate(List("templates-hidden", "analyze-result")).open_!
     def imageUrl = {
-      "/analyze-result-image/" + expName + "?" +
-        parameterString(
-          Seq(AnalyzeResultImageView.modeParam -> viewMode) ++
-          Seq(AnalyzeResultImageView.channel -> channel) ++
-          Seq(AnalyzeResultImageView.deltaChannel -> deltaChannel) ++
-          flagParameter(logarithm, AnalyzeResultImageView.logarithmParam) ++
-          flagParameter(meanFilter, AnalyzeResultImageView.meanFilterParam) :_*
-        )
+      skyMapUrl("/analyze-result-image", expName)
     }
     def loadImageCmd = JqId("result-image") ~> JqAttr("src", imageUrl) & SetHtml("statistics", <div>
       {statistics(expName)}
@@ -71,6 +64,7 @@ class AnalyzeResult extends LiftView {
     val binding =
       "#exp-name *" #> expName &
         "#start-button *" #> startButton(expName) &
+        "#export-button *" #> exportButton(expName) &
         "#mode-selector *" #> SHtml.ajaxSelect(Seq("plane" -> "Plane", "galactic" -> "Galactic"), Full("plane"), v => {
           viewMode = v
           loadImageCmd
@@ -98,6 +92,17 @@ class AnalyzeResult extends LiftView {
     <lift:surround with="default" at="content">
       {binding(template) ++ head}
     </lift:surround>
+  }
+
+  def skyMapUrl(url: String, expName: String): String = {
+    url + "/" + expName + "?" +
+      parameterString(
+        Seq(AnalyzeResultImageView.modeParam -> viewMode) ++
+          Seq(AnalyzeResultImageView.channel -> channel) ++
+          Seq(AnalyzeResultImageView.deltaChannel -> deltaChannel) ++
+          flagParameter(logarithm, AnalyzeResultImageView.logarithmParam) ++
+          flagParameter(meanFilter, AnalyzeResultImageView.meanFilterParam): _*
+      )
   }
 
   case object CurrentlyAnalyzing
@@ -163,6 +168,9 @@ class AnalyzeResult extends LiftView {
 
   }
 
+  def exportButton(expName: String): Elem = {
+    SHtml.ajaxButton("Export time table", () => RedirectTo(skyMapUrl("/export-time-table", expName)), "class" -> "btn")
+  }
 
   def startButton(expName: String): Elem = {
     implicit val timeout = Timeout(5 seconds)
