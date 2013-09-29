@@ -26,7 +26,7 @@ class AnalyzeResultImageView extends PrimitiveTypeMode {
     val width = 640
     val height = 480
     val bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-    val points = pointsBy(expName)
+    val points = pointsBy(expName).sortBy(_.time.getTime)
     StarCoordsPainter(points, S.param(modeParam).map {
       case "plane" => Plane
       case "galactic" => Galactic
