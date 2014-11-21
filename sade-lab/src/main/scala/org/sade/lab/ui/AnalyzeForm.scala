@@ -111,7 +111,7 @@ class AnalyzeForm(val file: File, killOnClose: Boolean = true, defaultRunner: Op
       pages += analyzeResultPlotPage ("Period", _.getRealPeriod.toDouble)
       pages += analyzeResultPlotPage ("Minimize error", _.getMinimizeError)
       pages += new Page("Statistics", new BorderPanel {
-        val statistics = new GridPanel(4, 2) {
+        val statistics = new GridPanel(5, 2) {
           contents += new Label("Mean value")
           contents += new BindLabel[SignalAnalyzer](AnalyzerModel.signalAnalyzer, _.meanValue.toString)
           contents += new Label("Absolute error")
@@ -120,6 +120,8 @@ class AnalyzeForm(val file: File, killOnClose: Boolean = true, defaultRunner: Op
           contents += new BindLabel[SignalAnalyzer](AnalyzerModel.signalAnalyzer, _.foundDeltaStream.size.toString)
           contents += new Label("Mean frequency")
           contents += new BindLabel[SignalAnalyzer](AnalyzerModel.signalAnalyzer, _.meanFrequency.toString)
+          contents += new Label("Omega Mean value")
+          contents += new BindLabel[SignalAnalyzer](AnalyzerModel.signalAnalyzer, _.omegaMean.toString)
         }
         layout(statistics) = Position.North
       })

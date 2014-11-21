@@ -10,8 +10,10 @@ class SignalAnalyzer(inputStream: InputStream, statusListener: Option[Float => U
   val floatReader = new FloatReader(inputStream, statusListener)
   val analyzeResults = estimateParameters.toArray
 
+  lazy val filteredResults = analyzeResults.filterNot(JacobiAngerAnalyzer.isOverErrorThreshold)
+
   def foundDeltaStream: Array[Double] = {
-    analyzeResults.filterNot(JacobiAngerAnalyzer.isOverErrorThreshold).map(_.getParameters.getDelta).toArray
+    filteredResults.map(_.getParameters.getDelta / (scala.math.Pi*2) ).toArray
   }
 
   private def estimateParameters = {
@@ -29,6 +31,9 @@ class SignalAnalyzer(inputStream: InputStream, statusListener: Option[Float => U
       })
     }).take(originalSignal.size)
   }
+
+  lazy val omegaMean: Double =
+    StatUtils.mean(filteredResults.map(_.getParameters.getOmega).toArray) / (2 * Pi)
 
   def absoluteError = {
     sqrt(StatUtils.variance(foundDeltaStream) / foundDeltaStream.length)
