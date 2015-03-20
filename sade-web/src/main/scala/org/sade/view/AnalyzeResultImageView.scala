@@ -16,6 +16,7 @@ class AnalyzeResultImageView extends PrimitiveTypeMode {
   def dispatch: PartialFunction[Req, () => Box[LiftResponse]] = {
     case Req(Seq("analyze-result-image", expName), _, _) if SadeDB.experiments.exists(_ == expName) => () => Full(drawImage(expName))
     case Req(Seq("export-time-table", expName), _, _) if SadeDB.experiments.exists(_ == expName) => () => Full(exportTimeTable(expName))
+    case Req(Seq("export-matrix-table", expName), _, _) if SadeDB.experiments.exists(_ == expName) => () => Full(exportMatrixTable(expName))
   }
 
   def filterByFlag(flagParam: String, filterFun: (scala.Seq[SkyMapPoint]) => Seq[SkyMapPoint], points: Seq[SkyMapPoint]): Seq[SkyMapPoint] = {
@@ -61,6 +62,26 @@ class AnalyzeResultImageView extends PrimitiveTypeMode {
     val stream = new ByteArrayOutputStream()
     workbook.write(stream)
     InMemoryResponse(stream.toByteArray, ("Content-type" -> "application/octet-stream") :: ("Content-Disposition" -> "attachment; filename=\"%s.xls\"".format(expName)) :: Nil, Nil, 200)
+  }
+
+  def exportMatrixTable(expName: String) = {
+    val workbook = new HSSFWorkbook()
+    val sheet = workbook.createSheet()
+    val points = pointsBy(expName)
+    val header = sheet.createRow(0)
+    exportTable.map(_._1).zipWithIndex.map {case (head, index) => header.createCell(index).setCellValue(head) }
+    val rows = points.groupBy(_.dirIndex).flatMap {
+      case (dirIndex, dirPoints) => Seq(dirPoints.filter(_.direction == Directions.Forward), dirPoints.filter(_.direction == Directions.Backward).reverse)
+    }
+    rows.zipWithIndex.foreach{ case(row, rowIndex) =>
+      val sheetRow = sheet.createRow(rowIndex)
+      row.zipWithIndex.foreach {
+        case (point, cellIndex) => sheetRow.createCell(cellIndex).setCellValue(point.value);
+      }
+    }
+    val stream = new ByteArrayOutputStream()
+    workbook.write(stream)
+    InMemoryResponse(stream.toByteArray, ("Content-type" -> "application/octet-stream") :: ("Content-Disposition" -> "attachment; filename=\"%s-matrix.xls\"".format(expName)) :: Nil, Nil, 200)
   }
 
   def pointsBy(expName: String) = {

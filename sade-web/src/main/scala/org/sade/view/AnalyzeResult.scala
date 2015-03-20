@@ -65,6 +65,7 @@ class AnalyzeResult extends LiftView {
       "#exp-name *" #> expName &
         "#start-button *" #> startButton(expName) &
         "#export-button *" #> exportButton(expName) &
+        "#export-matrix-button *" #> exportButton(expName, "Export matrix table" ,"/export-matrix-table") &
         "#mode-selector *" #> SHtml.ajaxSelect(Seq("plane" -> "Plane", "galactic" -> "Galactic"), Full("plane"), v => {
           viewMode = v
           loadImageCmd
@@ -168,8 +169,8 @@ class AnalyzeResult extends LiftView {
 
   }
 
-  def exportButton(expName: String): Elem = {
-    SHtml.ajaxButton("Export time table", () => RedirectTo(skyMapUrl("/export-time-table", expName)), "class" -> "btn")
+  def exportButton(expName: String, label:String = "Export time table", exportUrl: String = "/export-time-table"): Elem = {
+    SHtml.ajaxButton(label, () => RedirectTo(skyMapUrl(exportUrl, expName)), "class" -> "btn")
   }
 
   def startButton(expName: String): Elem = {
