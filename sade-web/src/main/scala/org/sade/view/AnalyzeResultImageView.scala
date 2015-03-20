@@ -40,6 +40,7 @@ class AnalyzeResultImageView extends PrimitiveTypeMode {
   val exportTable: Seq[(String, (HSSFCell, SkyMapPoint)=> Unit)] = Seq(
     "Time" -> { (c, p) => c.setCellValue(p.coordinates.time) },
     "Point index" -> { (c, p) => c.setCellValue(p.pointIndex) },
+    "Point count" -> { (c, p) => c.setCellValue(p.pointCount) },
     "Dir index" -> { (c, p) => c.setCellValue(p.dirIndex) },
     "Direction" -> { (c, p) => c.setCellValue(p.direction.toString) },
     "Value" -> { (c, p) => c.setCellValue(p.value) }
@@ -75,8 +76,14 @@ class AnalyzeResultImageView extends PrimitiveTypeMode {
     }
     rows.zipWithIndex.foreach{ case(row, rowIndex) =>
       val sheetRow = sheet.createRow(rowIndex)
-      row.zipWithIndex.foreach {
-        case (point, cellIndex) => sheetRow.createCell(cellIndex).setCellValue(point.value);
+      row.foreach {
+        point => sheetRow.createCell(if(point.direction == Directions.Forward)
+          point.pointIndex
+        else {
+          val cellIndex = point.pointCount - point.pointIndex - 1
+          if (cellIndex < 0) row.maxBy(_.pointIndex).pointIndex - point.pointIndex else cellIndex
+        }
+        ).setCellValue(point.value);
       }
     }
     val stream = new ByteArrayOutputStream()
