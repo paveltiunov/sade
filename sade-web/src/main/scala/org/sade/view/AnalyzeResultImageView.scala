@@ -92,6 +92,7 @@ class AnalyzeResultImageView extends PrimitiveTypeMode {
     }.openOr(SadeDB.skyMapPoints(expName, channelId = deltaChannel).toSeq)
     points = filterByFlag(meanFilterParam, SkyMapFilter.averageFilter, points)
     filterByFlag(logarithmParam, SkyMapFilter.logarithmFilter, points)
+    points.sortBy(p => (p.dirIndex, p.direction, p.pointIndex))
   }
 }
 
